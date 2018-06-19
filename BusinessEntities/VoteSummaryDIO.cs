@@ -10,7 +10,6 @@ namespace ro.stancescu.CDep.BusinessEntities
     /// <summary>
     /// The Data Interchange Object materializing the summary of a single vote.
     /// </summary>
-    [Serializable]
     public class VoteSummaryDIO
     {
         /// <summary>

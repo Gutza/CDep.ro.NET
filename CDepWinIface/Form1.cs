@@ -22,10 +22,15 @@ namespace CDepWinIface
 
         private void button1_Click(object sender, EventArgs e)
         {
-            XmlSerializer serializer = new XmlSerializer(typeof(VoteSummaryCollectionDIO));
-            StreamReader reader = new StreamReader(@"C:\Temp\evot-sumar.xml");
-            var summary = (VoteSummaryCollectionDIO)serializer.Deserialize(reader);
-            reader.Close();
+            XmlSerializer summarySerializer = new XmlSerializer(typeof(VoteSummaryCollectionDIO));
+            StreamReader summaryReader = new StreamReader(@"C:\Temp\evot-sumar.xml");
+            var summaryData = (VoteSummaryCollectionDIO)summarySerializer.Deserialize(summaryReader);
+            summaryReader.Close();
+
+            XmlSerializer detailSerializer = new XmlSerializer(typeof(VoteDetailCollectionDIO));
+            StreamReader detailReader = new StreamReader(@"C:\Temp\evot-detaliu.xml", Encoding.GetEncoding("ISO-8859-2"));
+            var detailData = (VoteDetailCollectionDIO)detailSerializer.Deserialize(detailReader);
+            detailReader.Close();
         }
     }
 }

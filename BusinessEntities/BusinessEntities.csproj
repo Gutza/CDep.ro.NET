@@ -40,6 +40,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="VoteDetailCollectionDIO.cs" />
+    <Compile Include="VoteDetailDIO.cs" />
     <Compile Include="VoteSummaryCollectionDIO.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="VoteSummaryDIO.cs" />
