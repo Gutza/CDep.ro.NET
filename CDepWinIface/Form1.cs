@@ -6,6 +6,7 @@ using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -22,15 +23,20 @@ namespace CDepWinIface
 
         private void button1_Click(object sender, EventArgs e)
         {
-            XmlSerializer summarySerializer = new XmlSerializer(typeof(VoteSummaryCollectionDIO));
-            StreamReader summaryReader = new StreamReader(@"C:\Temp\evot-sumar.xml");
-            var summaryData = (VoteSummaryCollectionDIO)summarySerializer.Deserialize(summaryReader);
-            summaryReader.Close();
+            WebClient web = new WebClient();
+            var detailStream = web.OpenRead(@"http://www.cdep.ro/pls/steno/evot2015.xml?par1=2&par2=19974");
+            using (var detailReader = new StreamReader(detailStream))
+            {
+                var detailSerializer = new XmlSerializer(typeof(VoteDetailCollectionDIO));
+                var detailData = (VoteDetailCollectionDIO)detailSerializer.Deserialize(detailReader);
+            }
 
-            XmlSerializer detailSerializer = new XmlSerializer(typeof(VoteDetailCollectionDIO));
-            StreamReader detailReader = new StreamReader(@"C:\Temp\evot-detaliu.xml", Encoding.GetEncoding("ISO-8859-2"));
-            var detailData = (VoteDetailCollectionDIO)detailSerializer.Deserialize(detailReader);
-            detailReader.Close();
+            var summaryStream = web.OpenRead(@"http://www.cdep.ro/pls/steno/evot2015.xml?par1=1&par2=20180618");
+            using (var summaryReader = new StreamReader(summaryStream))
+            {
+                XmlSerializer summarySerializer = new XmlSerializer(typeof(VoteSummaryCollectionDIO));
+                var summaryData = (VoteSummaryCollectionDIO)summarySerializer.Deserialize(summaryReader);
+            }
         }
     }
 }
