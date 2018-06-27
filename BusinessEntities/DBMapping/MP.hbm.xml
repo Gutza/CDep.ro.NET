@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" namespace="ro.stancescu.CDep.BusinessEntities" assembly="ro.stancescu.CDep.BusinessEntities">
+  <class name="MPDBE" table="MP" dynamic-insert="true">
+    <id name="Id">
+      <generator class="native"/>
+    </id>
+
+    <property name="FirstName" column="FirstName"/>
+    <property name="LastName" column="LastName"/>
+
+    <set name="VotesCast" inverse="true" cascade="all">
+      <key column="MP"/>
+      <one-to-many class="VoteDetailDBE"/>
+    </set>
+
+  </class>
+</hibernate-mapping>

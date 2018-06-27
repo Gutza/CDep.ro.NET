@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" namespace="ro.stancescu.CDep.BusinessEntities" assembly="ro.stancescu.CDep.BusinessEntities">
+  <class name="ParliamentarySessionDBE" table="ParliamentarySession" dynamic-insert="true">
+    <id name="Id">
+      <generator class="native"/>
+    </id>
+
+    <property name="Date" column="Date"/>
+
+    <set name="VoteSummaries" inverse="true" cascade="all">
+      <key column="Session"/>
+      <one-to-many class="ParliamentarySessionDBE"/>
+    </set>
+
+  </class>
+</hibernate-mapping>

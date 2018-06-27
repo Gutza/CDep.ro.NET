@@ -13,6 +13,8 @@ namespace ro.stancescu.CDep.BusinessEntities
     [XmlRoot("ROWSET")]
     public class VoteSummaryCollectionDIO
     {
+        public DateTime VoteDate;
+
         /// <summary>
         /// The list of vote summaries.
         /// </summary>
