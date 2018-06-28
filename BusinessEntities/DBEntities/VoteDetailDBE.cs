@@ -8,7 +8,7 @@ namespace ro.stancescu.CDep.BusinessEntities
 {
     public class VoteDetailDBE
     {
-        public virtual int? Id { get; set; }
+        public virtual UInt64? Id { get; set; }
 
         public virtual VoteSummaryDBE Vote { get; set; }
 

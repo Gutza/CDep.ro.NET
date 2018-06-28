@@ -15,7 +15,8 @@
     <property name="CountVotesYes" column="CountVotesYes"/>
     <property name="CountVotesNo" column="CountVotesNo"/>
     <property name="CountAbstentions" column="CountAbstentions"/>
-
+    <property name="ProcessingComplete" column="ProcessingComplete"/>
+    
     <set name="Votes" inverse="true" cascade="all">
       <key column="Vote"/>
       <one-to-many class="VoteDetailDBE"/>

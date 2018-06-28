@@ -16,8 +16,10 @@ namespace ro.stancescu.CDep.WebParser
         static ISessionFactory GlobalSessionFactory;
 
         public static event EventHandler<ProgressEventArgs> OnProgress;
+        public static event EventHandler OnNetworkStart;
+        public static event EventHandler OnNetworkStop;
 
-        public class ProgressEventArgs: EventArgs
+        public class ProgressEventArgs : EventArgs
         {
             public float Progress;
         }
@@ -25,17 +27,38 @@ namespace ro.stancescu.CDep.WebParser
         protected static void UpdateProgress(ProgressEventArgs e)
         {
             EventHandler<ProgressEventArgs> handler = OnProgress;
-            if (handler==null)
+            if (handler == null)
             {
                 return;
             }
             handler(null, e);
         }
 
+        protected static void StartNetwork(object o = null, EventArgs e = null)
+        {
+            var handler = OnNetworkStart;
+            if (handler == null)
+            {
+                return;
+            }
+            handler(null, new EventArgs());
+        }
+
+        protected static void StopNetwork(object o = null, EventArgs e = null)
+        {
+            var handler = OnNetworkStop;
+            if (handler == null)
+            {
+                return;
+            }
+            handler(null, new EventArgs());
+        }
+
         public static void Init(ISessionFactory session)
         {
             GlobalSessionFactory = session;
-            DetailProcessor.Init(session);
+            DetailProcessor.OnNetworkStart += StartNetwork;
+            DetailProcessor.OnNetworkStop += StopNetwork;
         }
 
         public static void Process(DateTime date)
@@ -47,14 +70,17 @@ namespace ro.stancescu.CDep.WebParser
                 web = new WebClient();
             }
 
+            StartNetwork();
             var webStream = web.OpenRead(url);
+            VoteSummaryCollectionDIO summaryData;
             using (var summaryReader = new StreamReader(webStream, Encoding.GetEncoding("ISO-8859-2")))
             {
                 XmlSerializer summarySerializer = new XmlSerializer(typeof(VoteSummaryCollectionDIO));
-                var summaryData = (VoteSummaryCollectionDIO)summarySerializer.Deserialize(summaryReader);
-                summaryData.VoteDate = date;
-                ProcessData(summaryData);
+                summaryData = (VoteSummaryCollectionDIO)summarySerializer.Deserialize(summaryReader);
             }
+            StopNetwork();
+            summaryData.VoteDate = date;
+            ProcessData(summaryData);
         }
 
         private static void ProcessData(VoteSummaryCollectionDIO summaryList)
@@ -62,6 +88,20 @@ namespace ro.stancescu.CDep.WebParser
             using (var sess = GlobalSessionFactory.OpenSession())
             {
                 int idx = 0;
+                var parliamentarySession = sess.QueryOver<ParliamentarySessionDBE>().Where(ps => ps.Date == summaryList.VoteDate).List().FirstOrDefault();
+                if (parliamentarySession != null && parliamentarySession.ProcessingComplete)
+                {
+                    return;
+                }
+                if (parliamentarySession == null)
+                {
+                    parliamentarySession = new ParliamentarySessionDBE()
+                    {
+                        Date = summaryList.VoteDate,
+                    };
+                    sess.Save(parliamentarySession);
+                }
+
                 foreach (var summaryEntry in summaryList.VoteSummary)
                 {
                     UpdateProgress(new ProgressEventArgs()
@@ -76,18 +116,8 @@ namespace ro.stancescu.CDep.WebParser
                         {
                             // Already processed
                             trans.Commit();
-                            DetailProcessor.Process(voteSummary);
+                            DetailProcessor.Process(voteSummary, sess);
                             continue;
-                        }
-
-                        var parliamentarySession = sess.QueryOver<ParliamentarySessionDBE>().Where(ps => ps.Date == summaryList.VoteDate).List().FirstOrDefault();
-                        if (parliamentarySession == null)
-                        {
-                            parliamentarySession = new ParliamentarySessionDBE()
-                            {
-                                Date = summaryList.VoteDate,
-                            };
-                            sess.Save(parliamentarySession);
                         }
 
                         voteSummary = new VoteSummaryDBE()
@@ -102,13 +132,21 @@ namespace ro.stancescu.CDep.WebParser
                             CountVotesYes = summaryEntry.CountVotesYes,
                             Description = summaryEntry.Description,
                             VoteTime = DateTime.ParseExact(summaryEntry.VoteTime, "dd.MM.yyyy HH:mm", null),
+                            ProcessingComplete = false,
                         };
                         sess.Save(voteSummary);
 
                         trans.Commit();
 
-                        DetailProcessor.Process(voteSummary);
+                        DetailProcessor.Process(voteSummary, sess);
                     }
+                }
+
+                using (var trans = sess.BeginTransaction())
+                {
+                    parliamentarySession.ProcessingComplete = true;
+                    sess.Update(parliamentarySession);
+                    trans.Commit();
                 }
             }
         }

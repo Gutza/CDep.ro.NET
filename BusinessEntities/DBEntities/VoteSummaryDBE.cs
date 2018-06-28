@@ -20,6 +20,7 @@ namespace ro.stancescu.CDep.BusinessEntities
         public virtual int CountVotesYes { get; set; }
         public virtual int CountVotesNo { get; set; }
         public virtual int CountAbstentions { get; set; }
+        public virtual bool ProcessingComplete { get; set; }
 
         public virtual ISet<VoteDetailDBE> Votes { get; set; }
     }

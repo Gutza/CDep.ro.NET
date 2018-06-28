@@ -8,8 +8,31 @@ namespace ro.stancescu.CDep.WebParser
 {
     public class ParliamentarySessionParser
     {
+        public static event EventHandler OnNetworkStart;
+        public static event EventHandler OnNetworkStop;
+
         private const string URI_FORMAT = "http://www.cdep.ro/pls/steno/evot2015.zile_vot?lu={1}&an={0}";
         static WebClient web = null;
+
+        protected static void StartNetwork()
+        {
+            var handler = OnNetworkStart;
+            if (handler == null)
+            {
+                return;
+            }
+            handler(null, new EventArgs());
+        }
+
+        protected static void StopNetwork()
+        {
+            var handler = OnNetworkStop;
+            if (handler == null)
+            {
+                return;
+            }
+            handler(null, new EventArgs());
+        }
 
         public static List<DateTime> GetDates(int year, int month)
         {
@@ -19,12 +42,14 @@ namespace ro.stancescu.CDep.WebParser
             }
 
             var url = String.Format(URI_FORMAT, year, month.ToString("D2"));
+            StartNetwork();
             var webStream = web.OpenRead(url);
             string csv;
             using (var summaryReader = new StreamReader(webStream, Encoding.GetEncoding("ISO-8859-2")))
             {
                 csv = summaryReader.ReadToEnd();
             }
+            StopNetwork();
 
             var result = new List<DateTime>();
             var csvEntries = csv.Split(',');

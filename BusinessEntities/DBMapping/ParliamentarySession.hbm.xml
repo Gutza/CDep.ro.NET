@@ -6,6 +6,7 @@
     </id>
 
     <property name="Date" column="Date"/>
+    <property name="ProcessingComplete" column="ProcessingComplete"/>
 
     <set name="VoteSummaries" inverse="true" cascade="all">
       <key column="Session"/>
