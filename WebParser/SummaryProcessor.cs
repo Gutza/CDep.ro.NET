@@ -123,7 +123,7 @@ namespace ro.stancescu.CDep.WebParser
                         voteSummary = new VoteSummaryDBE()
                         {
                             VoteIDCDep = summaryEntry.VoteId,
-                            Session = parliamentarySession,
+                            ParliamentarySession = parliamentarySession,
                             Chamber = summaryEntry.Chamber,
                             CountAbstentions = summaryEntry.CountAbstentions,
                             CountHaveNotVoted = summaryEntry.CountHaveNotVoted,

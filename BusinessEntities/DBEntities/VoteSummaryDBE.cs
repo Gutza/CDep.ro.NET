@@ -10,7 +10,7 @@ namespace ro.stancescu.CDep.BusinessEntities
     {
         public virtual int? Id { get; set; }
         public virtual int VoteIDCDep { get; set; }
-        public virtual ParliamentarySessionDBE Session { get; set; }
+        public virtual ParliamentarySessionDBE ParliamentarySession { get; set; }
         public virtual DateTime VoteTime { get; set; }
         public virtual string Description { get; set; }
         public virtual int Chamber { get; set; }
