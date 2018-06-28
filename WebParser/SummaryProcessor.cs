@@ -73,10 +73,15 @@ namespace ro.stancescu.CDep.WebParser
             StartNetwork();
             var webStream = web.OpenRead(url);
             VoteSummaryCollectionDIO summaryData;
-            using (var summaryReader = new StreamReader(webStream, Encoding.GetEncoding("ISO-8859-2")))
+            using (var streamReader = new StreamReader(webStream, Encoding.GetEncoding("ISO-8859-2")))
             {
+                if (streamReader.EndOfStream)
+                {
+                    StopNetwork();
+                    return;
+                }
                 XmlSerializer summarySerializer = new XmlSerializer(typeof(VoteSummaryCollectionDIO));
-                summaryData = (VoteSummaryCollectionDIO)summarySerializer.Deserialize(summaryReader);
+                summaryData = (VoteSummaryCollectionDIO)summarySerializer.Deserialize(streamReader);
             }
             StopNetwork();
             summaryData.VoteDate = date;

@@ -18,6 +18,9 @@ namespace ro.stancescu.CDep.WebParser
         private const string URI_FORMAT = "http://www.cdep.ro/pls/steno/evot2015.xml?par1=2&par2={0}";
         static WebClient web = null;
 
+        static Dictionary<string, MPDBE> MPCache = new Dictionary<string, MPDBE>();
+        static Dictionary<string, PoliticalGroupDBE> PGCache = new Dictionary<string, PoliticalGroupDBE>();
+
         protected static void StartNetwork()
         {
             var handler = OnNetworkStart;
@@ -55,10 +58,15 @@ namespace ro.stancescu.CDep.WebParser
             StartNetwork();
             var webStream = web.OpenRead(url);
             VoteDetailCollectionDIO detailData;
-            using (var summaryReader = new StreamReader(webStream, Encoding.GetEncoding("ISO-8859-2")))
+            using (var streamReader = new StreamReader(webStream, Encoding.GetEncoding("ISO-8859-2")))
             {
+                if (streamReader.EndOfStream)
+                {
+                    StopNetwork();
+                    return;
+                }
                 XmlSerializer summarySerializer = new XmlSerializer(typeof(VoteDetailCollectionDIO));
-                detailData = (VoteDetailCollectionDIO)summarySerializer.Deserialize(summaryReader);
+                detailData = (VoteDetailCollectionDIO)summarySerializer.Deserialize(streamReader);
                 detailData.Vote = voteSummary;
             }
             StopNetwork();
@@ -77,15 +85,25 @@ namespace ro.stancescu.CDep.WebParser
             {
                 using (var trans = session.BeginTransaction())
                 {
-                    var MP = session.QueryOver<MPDBE>().Where(mp => mp.FirstName == detailEntry.FirstName && mp.LastName == detailEntry.LastName).List().FirstOrDefault();
-                    if (MP == null)
+                    MPDBE MP;
+                    var MPCacheKey = detailEntry.FirstName + "//" + detailEntry.LastName;
+                    if (MPCache.ContainsKey(MPCacheKey))
                     {
-                        MP = new MPDBE()
+                        MP = MPCache[MPCacheKey];
+                    }
+                    else
+                    {
+                        MP = session.QueryOver<MPDBE>().Where(mp => mp.FirstName == detailEntry.FirstName && mp.LastName == detailEntry.LastName).List().FirstOrDefault();
+                        if (MP == null)
                         {
-                            FirstName = detailEntry.FirstName,
-                            LastName = detailEntry.LastName,
-                        };
-                        session.Save(MP);
+                            MP = new MPDBE()
+                            {
+                                FirstName = detailEntry.FirstName,
+                                LastName = detailEntry.LastName,
+                            };
+                            session.Save(MP);
+                        }
+                        MPCache[MPCacheKey] = MP;
                     }
 
                     var voteDetail = session.QueryOver<VoteDetailDBE>().Where(vd => vd.Vote == detailList.Vote && vd.MP==MP).List().FirstOrDefault();
@@ -95,14 +113,23 @@ namespace ro.stancescu.CDep.WebParser
                         continue;
                     }
 
-                    var politicalGroup = session.QueryOver<PoliticalGroupDBE>().Where(pg => pg.Name == detailEntry.PoliticalGroup).List().FirstOrDefault();
-                    if (politicalGroup==null)
+                    PoliticalGroupDBE politicalGroup;
+                    if (PGCache.ContainsKey(detailEntry.PoliticalGroup))
                     {
-                        politicalGroup = new PoliticalGroupDBE()
+                        politicalGroup = PGCache[detailEntry.PoliticalGroup];
+                    }
+                    else
+                    {
+                        politicalGroup = session.QueryOver<PoliticalGroupDBE>().Where(pg => pg.Name == detailEntry.PoliticalGroup).List().FirstOrDefault();
+                        if (politicalGroup == null)
                         {
-                            Name = detailEntry.PoliticalGroup,
-                        };
-                        session.Save(politicalGroup);
+                            politicalGroup = new PoliticalGroupDBE()
+                            {
+                                Name = detailEntry.PoliticalGroup,
+                            };
+                            session.Save(politicalGroup);
+                        }
+                        PGCache[detailEntry.PoliticalGroup] = politicalGroup;
                     }
 
                     voteDetail = new VoteDetailDBE()
