@@ -5,11 +5,10 @@
       <generator class="native"/>
     </id>
 
-    <property name="VoteCast" column="VoteCast"/>
-
     <many-to-one name="Vote" column="Vote" class="VoteSummaryDBE"/>
     <many-to-one name="MP" column="MP" class="MPDBE"/>
     <many-to-one name="PoliticalGroup" column="PoliticalGroup" class="PoliticalGroupDBE"/>
+    <property name="VoteCast" column="VoteCast"/>
 
   </class>
 </hibernate-mapping>

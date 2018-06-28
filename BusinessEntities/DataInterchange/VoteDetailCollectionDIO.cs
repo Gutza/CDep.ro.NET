@@ -13,6 +13,9 @@ namespace ro.stancescu.CDep.BusinessEntities
     [XmlRoot("ROWSET")]
     public class VoteDetailCollectionDIO
     {
+        [XmlIgnore]
+        public VoteSummaryDBE Vote;
+
         /// <summary>
         /// The list of vote detail entries.
         /// </summary>

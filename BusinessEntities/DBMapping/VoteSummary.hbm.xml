@@ -5,17 +5,16 @@
       <generator class="native"/>
     </id>
 
+    <many-to-one name="Session" column="ParliamentarySession" class="ParliamentarySessionDBE"/>
+    <property name="Chamber" column="Chamber"/>
     <property name="VoteIDCDep" column="VoteIDCDep"/>
     <property name="VoteTime" column="VoteTime"/>
     <property name="Description" column="Description" type="AnsiString" length="1000000"/>
-    <property name="Chamber" column="Chamber"/>
     <property name="CountPresent" column="CountPresent"/>
     <property name="CountHaveNotVoted" column="CountHaveNotVoted"/>
     <property name="CountVotesYes" column="CountVotesYes"/>
     <property name="CountVotesNo" column="CountVotesNo"/>
     <property name="CountAbstentions" column="CountAbstentions"/>
-
-    <many-to-one name="Session" column="ParliamentarySession" class="ParliamentarySessionDBE"/>
 
     <set name="Votes" inverse="true" cascade="all">
       <key column="Vote"/>

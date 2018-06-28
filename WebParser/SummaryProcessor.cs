@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Xml.Serialization;
 
 namespace ro.stancescu.CDep.WebParser
@@ -14,9 +15,27 @@ namespace ro.stancescu.CDep.WebParser
         static WebClient web = null;
         static ISessionFactory GlobalSessionFactory;
 
+        public static event EventHandler<ProgressEventArgs> OnProgress;
+
+        public class ProgressEventArgs: EventArgs
+        {
+            public float Progress;
+        }
+
+        protected static void UpdateProgress(ProgressEventArgs e)
+        {
+            EventHandler<ProgressEventArgs> handler = OnProgress;
+            if (handler==null)
+            {
+                return;
+            }
+            handler(null, e);
+        }
+
         public static void Init(ISessionFactory session)
         {
             GlobalSessionFactory = session;
+            DetailProcessor.Init(session);
         }
 
         public static void Process(DateTime date)
@@ -29,7 +48,7 @@ namespace ro.stancescu.CDep.WebParser
             }
 
             var webStream = web.OpenRead(url);
-            using (var summaryReader = new StreamReader(webStream))
+            using (var summaryReader = new StreamReader(webStream, Encoding.GetEncoding("ISO-8859-2")))
             {
                 XmlSerializer summarySerializer = new XmlSerializer(typeof(VoteSummaryCollectionDIO));
                 var summaryData = (VoteSummaryCollectionDIO)summarySerializer.Deserialize(summaryReader);
@@ -42,15 +61,22 @@ namespace ro.stancescu.CDep.WebParser
         {
             using (var sess = GlobalSessionFactory.OpenSession())
             {
+                int idx = 0;
                 foreach (var summaryEntry in summaryList.VoteSummary)
                 {
+                    UpdateProgress(new ProgressEventArgs()
+                    {
+                        Progress = ((float)idx) / summaryList.VoteSummary.Count,
+                    });
+                    idx++;
                     using (var trans = sess.BeginTransaction())
                     {
-                        var existingSummary = sess.QueryOver<VoteSummaryDBE>().Where(vs => vs.VoteIDCDep == summaryEntry.VoteId).List().FirstOrDefault();
-                        if (existingSummary != null)
+                        var voteSummary = sess.QueryOver<VoteSummaryDBE>().Where(vs => vs.VoteIDCDep == summaryEntry.VoteId).List().FirstOrDefault();
+                        if (voteSummary != null)
                         {
                             // Already processed
                             trans.Commit();
+                            DetailProcessor.Process(voteSummary);
                             continue;
                         }
 
@@ -64,7 +90,7 @@ namespace ro.stancescu.CDep.WebParser
                             sess.Save(parliamentarySession);
                         }
 
-                        var voteSummary = new VoteSummaryDBE()
+                        voteSummary = new VoteSummaryDBE()
                         {
                             VoteIDCDep = summaryEntry.VoteId,
                             Session = parliamentarySession,
@@ -80,6 +106,8 @@ namespace ro.stancescu.CDep.WebParser
                         sess.Save(voteSummary);
 
                         trans.Commit();
+
+                        DetailProcessor.Process(voteSummary);
                     }
                 }
             }

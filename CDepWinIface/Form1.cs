@@ -88,5 +88,30 @@ namespace ro.stancescu.CDep.CDepWinIface
             SummaryProcessor.Init(dbCfg.BuildSessionFactory());
             SummaryProcessor.Process(new DateTime(2018, 6, 18));
         }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            progressBar1.Minimum = 0;
+            progressBar1.Maximum = 1000;
+
+            var dates = ParliamentarySessionParser.GetDates(2018, 6);
+            SummaryProcessor.Init(dbCfg.BuildSessionFactory());
+            SummaryProcessor.OnProgress += SummaryProgress;
+            int idx = 1;
+            foreach (var date in dates)
+            {
+                toolStripStatusLabel1.Text = "Processing date " + date.ToString() + " (" + idx + "/" + dates.Count + ")";
+                Application.DoEvents();
+                SummaryProcessor.Process(date);
+                idx++;
+            }
+            toolStripStatusLabel1.Text = "Idle";
+        }
+
+        private void SummaryProgress(object sender, SummaryProcessor.ProgressEventArgs e)
+        {
+            progressBar1.Value = (int)Math.Round(1000 * e.Progress);
+            Application.DoEvents();
+        }
     }
 }
