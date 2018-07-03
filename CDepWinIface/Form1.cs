@@ -1,6 +1,8 @@
-﻿using NHibernate.Cfg;
+﻿using FluentNHibernate.Cfg;
+using NHibernate.Cfg;
 using NHibernate.Tool.hbm2ddl;
 using ro.stancescu.CDep.BusinessEntities;
+using ro.stancescu.CDep.BusinessEntities.DBMapping;
 using ro.stancescu.CDep.WebParser;
 using System;
 using System.Collections.Generic;
@@ -31,6 +33,8 @@ namespace ro.stancescu.CDep.CDepWinIface
         {
             dbCfg = new Configuration();
             dbCfg.Configure();
+            dbCfg = Fluently.Configure(dbCfg)
+                .Mappings(m => m.FluentMappings.AddFromAssemblyOf<MPMapping>()).BuildConfiguration();
             dbCfg.AddAssembly("ro.stancescu.CDep.BusinessEntities");
         }
 

@@ -75,6 +75,11 @@ namespace ro.stancescu.CDep.WebParser
             VoteSummaryCollectionDIO summaryData;
             using (var summaryReader = new StreamReader(webStream, Encoding.GetEncoding("ISO-8859-2")))
             {
+                if (summaryReader.EndOfStream)
+                {
+                    StopNetwork();
+                    return;
+                }
                 XmlSerializer summarySerializer = new XmlSerializer(typeof(VoteSummaryCollectionDIO));
                 summaryData = (VoteSummaryCollectionDIO)summarySerializer.Deserialize(summaryReader);
             }
