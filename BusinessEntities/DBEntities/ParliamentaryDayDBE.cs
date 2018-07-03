@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ro.stancescu.CDep.BusinessEntities
 {
-    public class ParliamentarySessionDBE
+    public class ParliamentaryDayDBE
     {
         public virtual int? Id { get; set; }
 

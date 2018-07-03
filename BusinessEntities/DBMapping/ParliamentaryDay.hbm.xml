@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" namespace="ro.stancescu.CDep.BusinessEntities" assembly="ro.stancescu.CDep.BusinessEntities">
-  <class name="ParliamentarySessionDBE" table="ParliamentarySession" dynamic-insert="true">
+  <class name="ParliamentaryDayDBE" table="ParliamentaryDay" dynamic-insert="true">
     <id name="Id">
       <generator class="native"/>
     </id>

@@ -41,7 +41,7 @@ namespace ro.stancescu.CDep.WebParser
             handler(null, new EventArgs());
         }
 
-        public static void Process(VoteSummaryDBE voteSummary, ISession session)
+        public static void Process(VoteSummaryDBE voteSummary, ISession session, bool newRecord)
         {
             if (voteSummary.ProcessingComplete)
             {
@@ -70,7 +70,7 @@ namespace ro.stancescu.CDep.WebParser
                 detailData.Vote = voteSummary;
             }
             StopNetwork();
-            ProcessData(detailData, session);
+            ProcessData(detailData, session, newRecord);
             using (var trans = session.BeginTransaction())
             {
                 voteSummary.ProcessingComplete = true;
@@ -79,7 +79,7 @@ namespace ro.stancescu.CDep.WebParser
             }
         }
 
-        public static void ProcessData(VoteDetailCollectionDIO detailList, ISession session)
+        public static void ProcessData(VoteDetailCollectionDIO detailList, ISession session, bool newRecord)
         {
             foreach (var detailEntry in detailList.VoteDetail)
             {
@@ -106,11 +106,15 @@ namespace ro.stancescu.CDep.WebParser
                         MPCache[MPCacheKey] = MP;
                     }
 
-                    var voteDetail = session.QueryOver<VoteDetailDBE>().Where(vd => vd.Vote == detailList.Vote && vd.MP==MP).List().FirstOrDefault();
-                    if (voteDetail!=null)
+                    VoteDetailDBE voteDetail;
+                    if (!newRecord)
                     {
-                        trans.Commit();
-                        continue;
+                        voteDetail = session.QueryOver<VoteDetailDBE>().Where(vd => vd.Vote == detailList.Vote && vd.MP == MP).List().FirstOrDefault();
+                        if (voteDetail != null)
+                        {
+                            trans.Commit();
+                            continue;
+                        }
                     }
 
                     PoliticalGroupDBE politicalGroup;

@@ -73,15 +73,10 @@ namespace ro.stancescu.CDep.WebParser
             StartNetwork();
             var webStream = web.OpenRead(url);
             VoteSummaryCollectionDIO summaryData;
-            using (var streamReader = new StreamReader(webStream, Encoding.GetEncoding("ISO-8859-2")))
+            using (var summaryReader = new StreamReader(webStream, Encoding.GetEncoding("ISO-8859-2")))
             {
-                if (streamReader.EndOfStream)
-                {
-                    StopNetwork();
-                    return;
-                }
                 XmlSerializer summarySerializer = new XmlSerializer(typeof(VoteSummaryCollectionDIO));
-                summaryData = (VoteSummaryCollectionDIO)summarySerializer.Deserialize(streamReader);
+                summaryData = (VoteSummaryCollectionDIO)summarySerializer.Deserialize(summaryReader);
             }
             StopNetwork();
             summaryData.VoteDate = date;
@@ -93,14 +88,14 @@ namespace ro.stancescu.CDep.WebParser
             using (var sess = GlobalSessionFactory.OpenSession())
             {
                 int idx = 0;
-                var parliamentarySession = sess.QueryOver<ParliamentarySessionDBE>().Where(ps => ps.Date == summaryList.VoteDate).List().FirstOrDefault();
+                var parliamentarySession = sess.QueryOver<ParliamentaryDayDBE>().Where(ps => ps.Date == summaryList.VoteDate).List().FirstOrDefault();
                 if (parliamentarySession != null && parliamentarySession.ProcessingComplete)
                 {
                     return;
                 }
                 if (parliamentarySession == null)
                 {
-                    parliamentarySession = new ParliamentarySessionDBE()
+                    parliamentarySession = new ParliamentaryDayDBE()
                     {
                         Date = summaryList.VoteDate,
                     };
@@ -121,14 +116,14 @@ namespace ro.stancescu.CDep.WebParser
                         {
                             // Already processed
                             trans.Commit();
-                            DetailProcessor.Process(voteSummary, sess);
+                            DetailProcessor.Process(voteSummary, sess, false);
                             continue;
                         }
 
                         voteSummary = new VoteSummaryDBE()
                         {
                             VoteIDCDep = summaryEntry.VoteId,
-                            ParliamentarySession = parliamentarySession,
+                            ParliamentaryDay = parliamentarySession,
                             Chamber = summaryEntry.Chamber,
                             CountAbstentions = summaryEntry.CountAbstentions,
                             CountHaveNotVoted = summaryEntry.CountHaveNotVoted,
@@ -143,7 +138,7 @@ namespace ro.stancescu.CDep.WebParser
 
                         trans.Commit();
 
-                        DetailProcessor.Process(voteSummary, sess);
+                        DetailProcessor.Process(voteSummary, sess, true);
                     }
                 }
 

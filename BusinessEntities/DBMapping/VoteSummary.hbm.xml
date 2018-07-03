@@ -5,7 +5,7 @@
       <generator class="native"/>
     </id>
 
-    <many-to-one name="ParliamentarySession" column="ParliamentarySession" class="ParliamentarySessionDBE"/>
+    <many-to-one name="ParliamentaryDay" column="ParliamentaryDay" class="ParliamentaryDayDBE"/>
     <property name="Chamber" column="Chamber"/>
     <property name="VoteIDCDep" column="VoteIDCDep"/>
     <property name="VoteTime" column="VoteTime"/>

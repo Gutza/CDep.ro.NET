@@ -75,7 +75,7 @@
     <Compile Include="DataInterchange\VoteDetailDIO.cs" />
     <Compile Include="DataInterchange\VoteSummaryCollectionDIO.cs" />
     <Compile Include="DBEntities\MPDBE.cs" />
-    <Compile Include="DBEntities\ParliamentarySessionDBE.cs" />
+    <Compile Include="DBEntities\ParliamentaryDayDBE.cs" />
     <Compile Include="DBEntities\PoliticalGroupDBE.cs" />
     <Compile Include="DBEntities\VoteDetailDBE.cs" />
     <Compile Include="DBEntities\VoteSummaryDBE.cs" />
@@ -87,7 +87,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="DBMapping\ParliamentarySession.hbm.xml" />
+    <EmbeddedResource Include="DBMapping\ParliamentaryDay.hbm.xml">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="DBMapping\VoteSummary.hbm.xml">

@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CDepWinIface", "CDepWinIfac
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BusinessEntities", "BusinessEntities\BusinessEntities.csproj", "{8ED6A9DC-B58E-41BD-9ED3-4B61E7C19642}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebParser", "WebParser\WebParser.csproj", "{785B4FED-AC9C-4D5A-AA7F-FF2307CCB363}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebParser", "WebParser\WebParser.csproj", "{785B4FED-AC9C-4D5A-AA7F-FF2307CCB363}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
