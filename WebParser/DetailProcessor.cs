@@ -135,11 +135,30 @@ namespace ro.stancescu.CDep.WebParser
                         PGCache[detailEntry.PoliticalGroup] = politicalGroup;
                     }
 
+                    VoteDetailDBE.VoteCastType voteCast;
+                    switch(detailEntry.VoteCast)
+                    {
+                        case "DA":
+                            voteCast = VoteDetailDBE.VoteCastType.VotedFor;
+                            break;
+                        case "NU":
+                            voteCast = VoteDetailDBE.VoteCastType.VotedAgainst;
+                            break;
+                        case "AB":
+                            voteCast = VoteDetailDBE.VoteCastType.Abstained;
+                            break;
+                        case "-":
+                            voteCast = VoteDetailDBE.VoteCastType.VotedNone;
+                            break;
+                        default:
+                            throw new InvalidOperationException("Unknown vote type: «" + detailEntry.VoteCast + "»");
+                    }
+
                     voteDetail = new VoteDetailDBE()
                     {
                         Vote = detailList.Vote,
                         MP = MP,
-                        VoteCast = detailEntry.VoteCast.Equals("DA"),
+                        VoteCast = voteCast,
                         PoliticalGroup = politicalGroup,
                     };
                     session.InsertAsync(voteDetail);

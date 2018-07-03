@@ -9,7 +9,7 @@
     <property name="ProcessingComplete" column="ProcessingComplete"/>
 
     <set name="VoteSummaries" inverse="true" cascade="all">
-      <key column="ParliamentarySession"/>
+      <key column="ParliamentaryDay"/>
       <one-to-many class="VoteSummaryDBE"/>
     </set>
 

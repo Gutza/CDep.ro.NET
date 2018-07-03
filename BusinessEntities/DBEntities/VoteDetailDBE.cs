@@ -8,6 +8,15 @@ namespace ro.stancescu.CDep.BusinessEntities
 {
     public class VoteDetailDBE
     {
+        public enum VoteCastType
+        {
+            InvalidValue,
+            VotedFor,
+            VotedAgainst,
+            Abstained,
+            VotedNone,
+        }
+
         public virtual UInt64? Id { get; set; }
 
         public virtual VoteSummaryDBE Vote { get; set; }
@@ -16,6 +25,6 @@ namespace ro.stancescu.CDep.BusinessEntities
 
         public virtual PoliticalGroupDBE PoliticalGroup { get; set; }
 
-        public virtual bool VoteCast { get; set; }
+        public virtual VoteCastType VoteCast { get; set; }
     }
 }
