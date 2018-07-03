@@ -41,7 +41,7 @@ namespace ro.stancescu.CDep.WebParser
             handler(null, new EventArgs());
         }
 
-        public static void Process(VoteSummaryDBE voteSummary, ISession session, bool newRecord)
+        public static void Process(VoteSummaryDBE voteSummary, IStatelessSession session, bool newRecord)
         {
             if (voteSummary.ProcessingComplete)
             {
@@ -74,16 +74,16 @@ namespace ro.stancescu.CDep.WebParser
             using (var trans = session.BeginTransaction())
             {
                 voteSummary.ProcessingComplete = true;
-                session.SaveOrUpdate(voteSummary);
+                session.Update(voteSummary);
                 trans.Commit();
             }
         }
 
-        public static void ProcessData(VoteDetailCollectionDIO detailList, ISession session, bool newRecord)
+        public static void ProcessData(VoteDetailCollectionDIO detailList, IStatelessSession session, bool newRecord)
         {
-            foreach (var detailEntry in detailList.VoteDetail)
+            using (var trans = session.BeginTransaction())
             {
-                using (var trans = session.BeginTransaction())
+                foreach (var detailEntry in detailList.VoteDetail)
                 {
                     MPDBE MP;
                     var MPCacheKey = detailEntry.FirstName + "//" + detailEntry.LastName;
@@ -101,7 +101,7 @@ namespace ro.stancescu.CDep.WebParser
                                 FirstName = detailEntry.FirstName,
                                 LastName = detailEntry.LastName,
                             };
-                            session.Save(MP);
+                            session.Insert(MP);
                         }
                         MPCache[MPCacheKey] = MP;
                     }
@@ -112,7 +112,6 @@ namespace ro.stancescu.CDep.WebParser
                         voteDetail = session.QueryOver<VoteDetailDBE>().Where(vd => vd.Vote == detailList.Vote && vd.MP == MP).List().FirstOrDefault();
                         if (voteDetail != null)
                         {
-                            trans.Commit();
                             continue;
                         }
                     }
@@ -131,7 +130,7 @@ namespace ro.stancescu.CDep.WebParser
                             {
                                 Name = detailEntry.PoliticalGroup,
                             };
-                            session.Save(politicalGroup);
+                            session.Insert(politicalGroup);
                         }
                         PGCache[detailEntry.PoliticalGroup] = politicalGroup;
                     }
@@ -143,9 +142,9 @@ namespace ro.stancescu.CDep.WebParser
                         VoteCast = detailEntry.VoteCast.Equals("DA"),
                         PoliticalGroup = politicalGroup,
                     };
-                    session.Save(voteDetail);
-                    trans.Commit();
+                    session.InsertAsync(voteDetail);
                 }
+                trans.CommitAsync();
             }
         }
     }

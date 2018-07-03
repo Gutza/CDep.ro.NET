@@ -85,21 +85,21 @@ namespace ro.stancescu.CDep.WebParser
 
         private static void ProcessData(VoteSummaryCollectionDIO summaryList)
         {
-            using (var sess = GlobalSessionFactory.OpenSession())
+            using (var sess = GlobalSessionFactory.OpenStatelessSession())
             {
                 int idx = 0;
-                var parliamentarySession = sess.QueryOver<ParliamentaryDayDBE>().Where(ps => ps.Date == summaryList.VoteDate).List().FirstOrDefault();
-                if (parliamentarySession != null && parliamentarySession.ProcessingComplete)
+                var parliamentaryDay = sess.QueryOver<ParliamentaryDayDBE>().Where(ps => ps.Date == summaryList.VoteDate).List().FirstOrDefault();
+                if (parliamentaryDay != null && parliamentaryDay.ProcessingComplete)
                 {
                     return;
                 }
-                if (parliamentarySession == null)
+                if (parliamentaryDay == null)
                 {
-                    parliamentarySession = new ParliamentaryDayDBE()
+                    parliamentaryDay = new ParliamentaryDayDBE()
                     {
                         Date = summaryList.VoteDate,
                     };
-                    sess.Save(parliamentarySession);
+                    sess.Insert(parliamentaryDay);
                 }
 
                 foreach (var summaryEntry in summaryList.VoteSummary)
@@ -123,7 +123,7 @@ namespace ro.stancescu.CDep.WebParser
                         voteSummary = new VoteSummaryDBE()
                         {
                             VoteIDCDep = summaryEntry.VoteId,
-                            ParliamentaryDay = parliamentarySession,
+                            ParliamentaryDay = parliamentaryDay,
                             Chamber = summaryEntry.Chamber,
                             CountAbstentions = summaryEntry.CountAbstentions,
                             CountHaveNotVoted = summaryEntry.CountHaveNotVoted,
@@ -134,7 +134,7 @@ namespace ro.stancescu.CDep.WebParser
                             VoteTime = DateTime.ParseExact(summaryEntry.VoteTime, "dd.MM.yyyy HH:mm", null),
                             ProcessingComplete = false,
                         };
-                        sess.Save(voteSummary);
+                        sess.Insert(voteSummary);
 
                         trans.Commit();
 
@@ -144,8 +144,8 @@ namespace ro.stancescu.CDep.WebParser
 
                 using (var trans = sess.BeginTransaction())
                 {
-                    parliamentarySession.ProcessingComplete = true;
-                    sess.Update(parliamentarySession);
+                    parliamentaryDay.ProcessingComplete = true;
+                    sess.Update(parliamentaryDay);
                     trans.Commit();
                 }
             }
