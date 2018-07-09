@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CDepWinIface", "CDepWinIfac
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BusinessEntities", "BusinessEntities\BusinessEntities.csproj", "{8ED6A9DC-B58E-41BD-9ED3-4B61E7C19642}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebParser", "WebParser\WebParser.csproj", "{785B4FED-AC9C-4D5A-AA7F-FF2307CCB363}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScraperLibrary", "ScraperLibrary\ScraperLibrary.csproj", "{1EE373A6-65CB-4E07-A6D5-6AD0FD559B13}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,10 +23,10 @@ Global
 		{8ED6A9DC-B58E-41BD-9ED3-4B61E7C19642}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8ED6A9DC-B58E-41BD-9ED3-4B61E7C19642}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8ED6A9DC-B58E-41BD-9ED3-4B61E7C19642}.Release|Any CPU.Build.0 = Release|Any CPU
-		{785B4FED-AC9C-4D5A-AA7F-FF2307CCB363}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{785B4FED-AC9C-4D5A-AA7F-FF2307CCB363}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{785B4FED-AC9C-4D5A-AA7F-FF2307CCB363}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{785B4FED-AC9C-4D5A-AA7F-FF2307CCB363}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1EE373A6-65CB-4E07-A6D5-6AD0FD559B13}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1EE373A6-65CB-4E07-A6D5-6AD0FD559B13}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1EE373A6-65CB-4E07-A6D5-6AD0FD559B13}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1EE373A6-65CB-4E07-A6D5-6AD0FD559B13}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

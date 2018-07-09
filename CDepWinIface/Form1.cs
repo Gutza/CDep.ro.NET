@@ -3,7 +3,7 @@ using NHibernate.Cfg;
 using NHibernate.Tool.hbm2ddl;
 using ro.stancescu.CDep.BusinessEntities;
 using ro.stancescu.CDep.BusinessEntities.DBMapping;
-using ro.stancescu.CDep.WebParser;
+using ro.stancescu.CDep.ScraperLibrary;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -115,6 +115,11 @@ namespace ro.stancescu.CDep.CDepWinIface
                 int idx = 1;
                 foreach (var date in dates)
                 {
+                    if (date.Year == DateTime.Now.Year && date.Month == DateTime.Now.Month && date.Day == DateTime.Now.Day)
+                    {
+                        // Don't even attempt to parse today; YMMV
+                        break;
+                    }
                     toolStripStatusLabel1.Text = "Processing date " + date.ToString() + " (" + idx + "/" + dates.Count + ")";
                     Application.DoEvents();
                     SummaryProcessor.Process(date);
@@ -122,7 +127,7 @@ namespace ro.stancescu.CDep.CDepWinIface
                 }
 
                 currentMonth++;
-                if (currentMonth==13)
+                if (currentMonth == 13)
                 {
                     currentMonth = 1;
                     currentYear++;
