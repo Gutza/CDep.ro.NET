@@ -49,7 +49,7 @@ namespace ro.stancescu.CDep.CDepWinIface
             progressBar1.Minimum = 0;
             progressBar1.Maximum = 1000;
 
-            // History starts on February, 2006
+            // History starts in February, 2006
             int currentYear = 2006;
             int currentMonth = 2;
 
@@ -84,6 +84,7 @@ namespace ro.stancescu.CDep.CDepWinIface
                     currentYear++;
                 }
             }
+            progressBar1.Value = 0;
             toolStripStatusLabel1.Text = "Idle";
         }
 
@@ -103,6 +104,12 @@ namespace ro.stancescu.CDep.CDepWinIface
         {
             networkPanel.BackColor = Color.White;
             Application.DoEvents();
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            var mpparser = new MPParser();
+            mpparser.Execute();
         }
     }
 }
