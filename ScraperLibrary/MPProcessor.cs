@@ -18,8 +18,6 @@ namespace ro.stancescu.CDep.ScraperLibrary
     {
         public override void Init()
         {
-            //var foo = this.HttpRetryAttempts;
-            HttpRetryAttempts = 0;
             LoggingLevel = LogLevel.All;
             Request("http://www.cdep.ro/pls/parlam/structura2015.de?leg=2016", Parse);
         }

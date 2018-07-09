@@ -153,5 +153,11 @@ namespace ro.stancescu.CDep.CDepWinIface
             networkPanel.BackColor = Color.White;
             Application.DoEvents();
         }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            var mpproc = new MPProcessor();
+            mpproc.Execute();
+        }
     }
 }

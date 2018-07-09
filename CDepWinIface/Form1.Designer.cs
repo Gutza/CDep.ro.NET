@@ -35,6 +35,7 @@
             this.progressBar1 = new System.Windows.Forms.ProgressBar();
             this.networkPanel = new System.Windows.Forms.Panel();
             this.label1 = new System.Windows.Forms.Label();
+            this.button1 = new System.Windows.Forms.Button();
             this.statusStrip1.SuspendLayout();
             this.networkPanel.SuspendLayout();
             this.SuspendLayout();
@@ -63,7 +64,7 @@
             // 
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripStatusLabel1});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 106);
+            this.statusStrip1.Location = new System.Drawing.Point(0, 141);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.Size = new System.Drawing.Size(284, 22);
             this.statusStrip1.TabIndex = 5;
@@ -103,12 +104,23 @@
             this.label1.TabIndex = 0;
             this.label1.Text = "N";
             // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(13, 100);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(259, 23);
+            this.button1.TabIndex = 8;
+            this.button1.Text = "button1";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
+            // 
             // Form1
             // 
             this.AcceptButton = this.button5;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(284, 128);
+            this.ClientSize = new System.Drawing.Size(284, 163);
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.networkPanel);
             this.Controls.Add(this.progressBar1);
             this.Controls.Add(this.statusStrip1);
@@ -133,6 +145,7 @@
         private System.Windows.Forms.ProgressBar progressBar1;
         private System.Windows.Forms.Panel networkPanel;
         private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Button button1;
     }
 }
 
