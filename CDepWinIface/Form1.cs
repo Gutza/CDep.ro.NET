@@ -1,4 +1,5 @@
 ﻿using FluentNHibernate.Cfg;
+using NHibernate;
 using NHibernate.Cfg;
 using NHibernate.Tool.hbm2ddl;
 using ro.stancescu.CDep.BusinessEntities;
@@ -23,6 +24,7 @@ namespace ro.stancescu.CDep.CDepWinIface
     public partial class Form1 : Form
     {
         Configuration dbCfg;
+        ISessionFactory sessionFactory;
 
         public Form1()
         {
@@ -36,6 +38,7 @@ namespace ro.stancescu.CDep.CDepWinIface
             dbCfg = Fluently.Configure(dbCfg)
                 .Mappings(m => m.FluentMappings.AddFromAssemblyOf<MPMapping>()).BuildConfiguration();
             dbCfg.AddAssembly("ro.stancescu.CDep.BusinessEntities");
+            sessionFactory = dbCfg.BuildSessionFactory();
         }
 
         private void DBCreate(object sender, EventArgs e)
@@ -49,7 +52,7 @@ namespace ro.stancescu.CDep.CDepWinIface
             progressBar1.Minimum = 0;
             progressBar1.Maximum = 1000;
 
-            // History starts on February, 2006
+            // History starts in February, 2006
             int currentYear = 2006;
             int currentMonth = 2;
 
@@ -59,7 +62,7 @@ namespace ro.stancescu.CDep.CDepWinIface
                 ParliamentarySessionParser.OnNetworkStop += NetworkStop;
                 var dates = ParliamentarySessionParser.GetDates(currentYear, currentMonth);
 
-                SummaryProcessor.Init(dbCfg.BuildSessionFactory());
+                SummaryProcessor.Init(sessionFactory);
                 SummaryProcessor.OnProgress += SummaryProgress;
                 SummaryProcessor.OnNetworkStart += NetworkStart;
                 SummaryProcessor.OnNetworkStop += NetworkStop;
@@ -84,6 +87,7 @@ namespace ro.stancescu.CDep.CDepWinIface
                     currentYear++;
                 }
             }
+            progressBar1.Value = 0;
             toolStripStatusLabel1.Text = "Idle";
         }
 
@@ -103,6 +107,12 @@ namespace ro.stancescu.CDep.CDepWinIface
         {
             networkPanel.BackColor = Color.White;
             Application.DoEvents();
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            var mpparser = new MPParser();
+            mpparser.Execute(sessionFactory);
         }
     }
 }
