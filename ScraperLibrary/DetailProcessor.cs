@@ -21,6 +21,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
         static Dictionary<string, MPDBE> MPCache = new Dictionary<string, MPDBE>();
         static Dictionary<string, PoliticalGroupDBE> PGCache = new Dictionary<string, PoliticalGroupDBE>();
 
+        #region UI Event Handlers
         protected static void StartNetwork()
         {
             var handler = OnNetworkStart;
@@ -40,6 +41,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
             }
             handler(null, new EventArgs());
         }
+        #endregion UI Event Handlers
 
         public static void Process(VoteSummaryDBE voteSummary, IStatelessSession session, bool newRecord)
         {

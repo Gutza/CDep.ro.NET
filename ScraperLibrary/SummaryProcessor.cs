@@ -24,6 +24,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
             public float Progress;
         }
 
+        #region UI Event Handlers
         protected static void UpdateProgress(ProgressEventArgs e)
         {
             EventHandler<ProgressEventArgs> handler = OnProgress;
@@ -53,6 +54,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
             }
             handler(null, new EventArgs());
         }
+        #endregion UI Event Handlers
 
         public static void Init(ISessionFactory session)
         {
@@ -80,6 +82,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
                     StopNetwork();
                     return;
                 }
+
                 XmlSerializer summarySerializer = new XmlSerializer(typeof(VoteSummaryCollectionDIO));
                 summaryData = (VoteSummaryCollectionDIO)summarySerializer.Deserialize(summaryReader);
             }
@@ -116,11 +119,17 @@ namespace ro.stancescu.CDep.ScraperLibrary
                     idx++;
                     using (var trans = sess.BeginTransaction())
                     {
-                        var voteSummary = sess.QueryOver<VoteSummaryDBE>().Where(vs => vs.VoteIDCDep == summaryEntry.VoteId).List().FirstOrDefault();
+                        var voteSummary = sess.
+                            QueryOver<VoteSummaryDBE>().
+                            Where(vs => vs.VoteIDCDep == summaryEntry.VoteId).
+                            List().
+                            FirstOrDefault();
+
                         if (voteSummary != null)
                         {
                             // Already processed
                             trans.Commit();
+
                             DetailProcessor.Process(voteSummary, sess, false);
                             continue;
                         }
