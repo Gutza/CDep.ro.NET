@@ -1,4 +1,5 @@
 ﻿using AngleSharp;
+using AngleSharp.Dom;
 using AngleSharp.Dom.Html;
 using AngleSharp.Network.Default;
 using AngleSharp.Parser.Html;
@@ -21,8 +22,20 @@ namespace ro.stancescu.CDep.ScraperLibrary
             _Execute();
         }
 
-
         private async void _Execute()
+        {
+            var foo = await GetInitialBrowser();
+
+            (foo.QuerySelector("#__EVENTTARGET") as IHtmlInputElement).Value = "ctl00$B_Center$VoturiPlen1$calVOT";
+            (foo.QuerySelector("#__EVENTARGUMENT") as IHtmlInputElement).Value = "6745";
+
+            var fooInner = foo.Body.InnerHtml;
+
+            var bar = await ((IHtmlFormElement)foo.QuerySelector("#aspnetForm")).SubmitAsync();
+            var barInner = bar.Body.InnerHtml;
+        }
+
+        private async Task<IDocument> GetInitialBrowser()
         {
             var requester = new HttpRequester();
             requester.Headers["User-Agent"] = "Mozilla";
@@ -32,14 +45,14 @@ namespace ro.stancescu.CDep.ScraperLibrary
             // Load the names of all The Big Bang Theory episodes from Wikipedia
             var address = baseUrl;
             // Asynchronously get the document in a new context using the configuration
-            var document = await BrowsingContext.New(config).OpenAsync(address);
+            var initialRequest = await BrowsingContext.New(config).OpenAsync(address);
             // This CSS selector gets the desired content
             var inputSelector = "#aspnetForm input";
             // Perform the query to get all cells with the content
-            var inputs = document.QuerySelectorAll(inputSelector);
+            var inputs = initialRequest.QuerySelectorAll(inputSelector);
             // We are only interested in the text - select it with LINQ
             //var titles = inputs.Select(m => m.TextContent);
-            foreach(var input in inputs)
+            foreach (var input in inputs)
             {
                 if (!input.HasAttribute("name") || !input.HasAttribute("type") || !input.Attributes["type"].Value.Equals("hidden"))
                 {
@@ -53,18 +66,10 @@ namespace ro.stancescu.CDep.ScraperLibrary
                 }
             }
 
-            (document.QuerySelector("#ctl00_B_Center_VoturiPlen1_chkPaginare") as IHtmlInputElement).IsChecked = false;
-            (document.QuerySelector("#__EVENTTARGET") as IHtmlInputElement).Value = "ctl00$B_Center$VoturiPlen1$chkPaginare";
+            (initialRequest.QuerySelector("#ctl00_B_Center_VoturiPlen1_chkPaginare") as IHtmlInputElement).IsChecked = false;
+            (initialRequest.QuerySelector("#__EVENTTARGET") as IHtmlInputElement).Value = "ctl00$B_Center$VoturiPlen1$chkPaginare";
 
-            var foo = await ((IHtmlFormElement)document.QuerySelector("#aspnetForm")).SubmitAsync();
-
-            (foo.QuerySelector("#__EVENTTARGET") as IHtmlInputElement).Value = "ctl00$B_Center$VoturiPlen1$calVOT";
-            (foo.QuerySelector("#__EVENTARGUMENT") as IHtmlInputElement).Value = "6745";
-
-            var fooInner = foo.Body.InnerHtml;
-
-            var bar = await ((IHtmlFormElement)foo.QuerySelector("#aspnetForm")).SubmitAsync();
-            var barInner = bar.Body.InnerHtml;
+            return await ((IHtmlFormElement)initialRequest.QuerySelector("#aspnetForm")).SubmitAsync();
         }
     }
 }
