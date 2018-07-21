@@ -16,27 +16,12 @@ using System.Threading.Tasks;
 
 namespace ro.stancescu.CDep.ScraperLibrary
 {
-    public class SenateCalendarScraper
+    public class SenateCalendarScraper: SenateBaseScraper
     {
-        class CalendarDateDTO
+        class SenateCalendarDateDTO
         {
             public string DayOfMonth;
-
             public string UniqueDateIndex;
-        }
-
-        private const string baseUrl = "https://www.senat.ro/Voturiplen.aspx";
-        private Logger LocalLogger = null;
-        private const int RETRY_COUNT = 3;
-
-        public void Execute()
-        {
-            if (LocalLogger == null)
-            {
-                LocalLogger = LogManager.GetCurrentClassLogger();
-            }
-
-            _Execute();
         }
 
         /// <remarks>
@@ -44,12 +29,12 @@ namespace ro.stancescu.CDep.ScraperLibrary
         /// The reason is related to the fact that we're returning void from this method.
         /// For details see https://stackoverflow.com/questions/5383310/catch-an-exception-thrown-by-an-async-method
         /// </remarks>
-        private async void _Execute()
+        protected override async void _Execute()
         {
             try
             {
                 var initialDocument = await GetInitialDocument();
-                var jan2018Document = await SetMonthIndex(initialDocument, "2017", "1");
+                var jan2018Document = await SetMonthIndex(initialDocument, 2017, 1);
                 var jan2018inner = jan2018Document.Body.InnerHtml;
                 var days = GetValidDates(jan2018Document);
                 //SetDateIndex(initialDocument, "6745");
@@ -68,11 +53,11 @@ namespace ro.stancescu.CDep.ScraperLibrary
             SetHtmlEvent(document, "ctl00$B_Center$VoturiPlen1$calVOT", dateIndex);
         }
 
-        private List<CalendarDateDTO> GetValidDates(IDocument document)
+        private List<SenateCalendarDateDTO> GetValidDates(IDocument document)
         {
             var regexp = new Regex(@"(\d+)'\)$");
             var cssCyan = Color.FromHex("0ff").ToString();
-            var result = new List<CalendarDateDTO>();
+            var result = new List<SenateCalendarDateDTO>();
             var cells = document.QuerySelectorAll("#ctl00_B_Center_VoturiPlen1_calVOT > tbody > tr > td");
             foreach (var cell in cells)
             {
@@ -96,7 +81,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
                     continue;
                 }
 
-                result.Add(new CalendarDateDTO()
+                result.Add(new SenateCalendarDateDTO()
                 {
                     UniqueDateIndex = match.Groups[1].Value,
                     DayOfMonth = anchor.Text,
@@ -106,47 +91,43 @@ namespace ro.stancescu.CDep.ScraperLibrary
             return result;
         }
 
-        private async Task<IDocument> SetMonthIndex(IDocument document, string year, string month)
+        private async Task<IDocument> SetMonthIndex(IDocument document, int year, int month)
         {
-            GetSelect(document, "ctl00_B_Center_VoturiPlen1_drpYearCal").Value = year;
-            SetHtmlEvent(document, "ctl00$B_Center$VoturiPlen1$drpYearCal", year);
+            GetSelect(document, "ctl00_B_Center_VoturiPlen1_drpYearCal").Value = year.ToString();
+            SetHtmlEvent(document, "ctl00$B_Center$VoturiPlen1$drpYearCal", year.ToString());
 
-            var docYear = await SubmitMainForm(document);
+            var docYear = await SubmitMainForm();
+            if (!IsDocumentValid(docYear))
+            {
+                throw new NetworkFailureConnectionException("Failed switching to year " + year);
+            }
 
-            GetSelect(docYear, "ctl00_B_Center_VoturiPlen1_drpMonthCal").Value = month;
-            SetHtmlEvent(docYear, "ctl00$B_Center$VoturiPlen1$drpMonthCal", month);
-            return await SubmitMainForm(docYear);
+            GetSelect(docYear, "ctl00_B_Center_VoturiPlen1_drpMonthCal").Value = month.ToString();
+            SetHtmlEvent(docYear, "ctl00$B_Center$VoturiPlen1$drpMonthCal", month.ToString());
+            var docMonth = await SubmitMainForm();
+            if (!IsDocumentValid(docMonth))
+            {
+                throw new NetworkFailureConnectionException("Failed switching to month " + year + "-" + month.ToString("D2"));
+            }
+
+            liveDocument = docMonth;
+            return liveDocument;
         }
 
         private async Task<IDocument> GetInitialDocument()
         {
             LocalLogger.Trace("Generating the initial browser state");
 
-            var requester = new HttpRequester();
-            requester.Headers["User-Agent"] = "Mozilla";
-
-            // Setup the configuration to support document loading
-            var config = Configuration.Default.WithDefaultLoader(requesters: new[] { requester }).WithCss();
-
-            // Load the names of all The Big Bang Theory episodes from Wikipedia
-            var address = baseUrl;
-
-            // Asynchronously get the document in a new context using the configuration
-            var initialRequest = await BrowsingContext.New(config).OpenAsync(address);
-
-            for (var i = 0; !IsDocumentValid(initialRequest) && i < RETRY_COUNT; i++)
-            {
-                LocalLogger.Warn("Failed retrieving the initial browser (attempt " + (i + 1) + "/" + RETRY_COUNT + ")");
-                initialRequest = await BrowsingContext.New(config).OpenAsync(address);
-            }
+            var localDoc = await GetBaseDocument();
 
             // Uncheck the pagination option. Throw exception if it doesn't exist.
-            GetInput(initialRequest, "ctl00_B_Center_VoturiPlen1_chkPaginare").IsChecked = false;
-            SetHtmlEvent(initialRequest, "ctl00$B_Center$VoturiPlen1$chkPaginare", "");
+            GetInput(localDoc, "ctl00_B_Center_VoturiPlen1_chkPaginare").IsChecked = false;
+            SetHtmlEvent(localDoc, "ctl00$B_Center$VoturiPlen1$chkPaginare", "");
 
-            var initialBrowser = await SubmitMainForm(initialRequest);
+            localDoc = await SubmitMainForm();
+
             LocalLogger.Trace("Finished generating the initial browser state");
-            return initialBrowser;
+            return SetLive(liveDocument);
         }
 
         private void SetHtmlEvent(IDocument document, string target, string argument)
@@ -182,22 +163,9 @@ namespace ro.stancescu.CDep.ScraperLibrary
             return (T)element;
         }
 
-        private async Task<IDocument> SubmitMainForm(IDocument document)
+        protected override string GetBaseUrl()
         {
-            var result = await ((IHtmlFormElement)document.QuerySelector("#aspnetForm")).SubmitAsync();
-
-            for (var i = 0; !IsDocumentValid(result) && i < RETRY_COUNT; i++)
-            {
-                LocalLogger.Warn("Failed submitting the main ASP.Net form (attempt " + (i + 1) + "/" + RETRY_COUNT + ")");
-                result = await ((IHtmlFormElement)document.QuerySelector("#aspnetForm")).SubmitAsync();
-            }
-
-            return result;
-        }
-
-        private bool IsDocumentValid(IDocument document)
-        {
-            return document.StatusCode == HttpStatusCode.OK && document.Body.ChildElementCount > 0;
+            return "https://www.senat.ro/Voturiplen.aspx";
         }
     }
 }
