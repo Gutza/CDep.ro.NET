@@ -111,6 +111,8 @@ namespace ro.stancescu.CDep.CDepWinIface
 
         private void button1_Click(object sender, EventArgs e)
         {
+            var senateScraper = new SenateCalendarScraper();
+            senateScraper.Execute();
             var mpparser = new MPParser();
             mpparser.Execute(sessionFactory);
         }

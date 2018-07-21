@@ -78,6 +78,7 @@
     <Compile Include="MPParser.cs" />
     <Compile Include="ParliamentarySessionParser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SenateCalendarScraper.cs" />
     <Compile Include="SummaryProcessor.cs" />
   </ItemGroup>
   <ItemGroup>
