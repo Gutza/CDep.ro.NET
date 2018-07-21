@@ -30,12 +30,14 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
         private async void _Execute()
         {
-            var foo = await GetInitialBrowser();
+            var initialDocument = await GetInitialDocument();
+            var jan2018Document = await SetMonthIndex(initialDocument, "2017", "1");
+            var jan2018inner = jan2018Document.Body.InnerHtml;
 
-            SetDateIndex(foo, "6745");
-            var bar = await SubmitMainForm(foo);
+            //SetDateIndex(initialDocument, "6745");
+            //var bar = await SubmitMainForm(initialDocument);
 
-            var barInner = bar.Body.InnerHtml;
+            //var barInner = jan2018Document.Body.InnerHtml;
         }
 
         private void SetDateIndex(IDocument document, string dateIndex)
@@ -43,7 +45,19 @@ namespace ro.stancescu.CDep.ScraperLibrary
             SetHtmlEvent(document, "ctl00$B_Center$VoturiPlen1$calVOT", dateIndex);
         }
 
-        private async Task<IDocument> GetInitialBrowser()
+        private async Task<IDocument> SetMonthIndex(IDocument document, string year, string month)
+        {
+            GetSelect(document, "ctl00_B_Center_VoturiPlen1_drpYearCal").Value = year;
+            SetHtmlEvent(document, "ctl00$B_Center$VoturiPlen1$drpYearCal", year);
+
+            var docYear = await SubmitMainForm(document);
+
+            GetSelect(docYear, "ctl00_B_Center_VoturiPlen1_drpMonthCal").Value = month;
+            SetHtmlEvent(docYear, "ctl00$B_Center$VoturiPlen1$drpMonthCal", month);
+            return await SubmitMainForm(docYear);
+        }
+
+        private async Task<IDocument> GetInitialDocument()
         {
             LocalLogger.Trace("Generating the initial browser state");
 
@@ -76,18 +90,29 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
         private IHtmlInputElement GetInput(IDocument document, string inputId, bool throwException = true)
         {
-            var selector = "#" + inputId;
+            return GetGenericById<IHtmlInputElement>(document, inputId, throwException);
+        }
+
+        private IHtmlSelectElement GetSelect(IDocument document, string selectId, bool throwException = true)
+        {
+            return GetGenericById<IHtmlSelectElement>(document, selectId, throwException);
+        }
+
+        private T GetGenericById<T>(IDocument document, string elementId, bool throwException = true)
+            where T : class, IHtmlElement
+        {
+            var selector = "#" + elementId;
             var element = document.QuerySelector(selector);
             if (!throwException)
             {
-                return element as IHtmlInputElement;
+                return element as T;
             }
-
-            if (element == null || !(element is IHtmlInputElement))
+            
+            if (element == null || !(element is T))
             {
-                throw new UnexpectedPageContentException("Failed finding input " + selector);
+                throw new UnexpectedPageContentException("Failed finding element by ID using CSS selector " + selector + ", for type " + typeof(T).ToString());
             }
-            return (IHtmlInputElement)element;
+            return (T)element;
         }
 
         private async Task<IDocument> SubmitMainForm(IDocument document)
