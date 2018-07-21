@@ -33,8 +33,8 @@ namespace ro.stancescu.CDep.ScraperLibrary
         {
             try
             {
-                var initialDocument = await GetInitialDocument();
-                var jan2018Document = await SetMonthIndex(initialDocument, 2017, 1);
+                var initialDocument = await GetLiveInitialDocument();
+                var jan2018Document = await SetLiveMonthIndex(initialDocument, 2017, 1);
                 var jan2018inner = jan2018Document.Body.InnerHtml;
                 var days = GetValidDates(jan2018Document);
                 //SetDateIndex(initialDocument, "6745");
@@ -48,9 +48,9 @@ namespace ro.stancescu.CDep.ScraperLibrary
             }
         }
 
-        private void SetDateIndex(IDocument document, string dateIndex)
+        private void SetLiveDateIndex(string dateIndex)
         {
-            SetHtmlEvent(document, "ctl00$B_Center$VoturiPlen1$calVOT", dateIndex);
+            SetLiveHtmlEvent("ctl00$B_Center$VoturiPlen1$calVOT", dateIndex);
         }
 
         private List<SenateCalendarDateDTO> GetValidDates(IDocument document)
@@ -91,20 +91,20 @@ namespace ro.stancescu.CDep.ScraperLibrary
             return result;
         }
 
-        private async Task<IDocument> SetMonthIndex(IDocument document, int year, int month)
+        private async Task<IDocument> SetLiveMonthIndex(IDocument document, int year, int month)
         {
             GetSelect(document, "ctl00_B_Center_VoturiPlen1_drpYearCal").Value = year.ToString();
-            SetHtmlEvent(document, "ctl00$B_Center$VoturiPlen1$drpYearCal", year.ToString());
+            SetLiveHtmlEvent("ctl00$B_Center$VoturiPlen1$drpYearCal", year.ToString());
 
-            var docYear = await SubmitMainForm();
+            var docYear = await SubmitLiveMainForm();
             if (!IsDocumentValid(docYear))
             {
                 throw new NetworkFailureConnectionException("Failed switching to year " + year);
             }
 
             GetSelect(docYear, "ctl00_B_Center_VoturiPlen1_drpMonthCal").Value = month.ToString();
-            SetHtmlEvent(docYear, "ctl00$B_Center$VoturiPlen1$drpMonthCal", month.ToString());
-            var docMonth = await SubmitMainForm();
+            SetLiveHtmlEvent("ctl00$B_Center$VoturiPlen1$drpMonthCal", month.ToString());
+            var docMonth = await SubmitLiveMainForm();
             if (!IsDocumentValid(docMonth))
             {
                 throw new NetworkFailureConnectionException("Failed switching to month " + year + "-" + month.ToString("D2"));
@@ -114,53 +114,20 @@ namespace ro.stancescu.CDep.ScraperLibrary
             return liveDocument;
         }
 
-        private async Task<IDocument> GetInitialDocument()
+        private async Task<IDocument> GetLiveInitialDocument()
         {
             LocalLogger.Trace("Generating the initial browser state");
 
-            var localDoc = await GetBaseDocument();
+            await GetLiveBaseDocument();
 
             // Uncheck the pagination option. Throw exception if it doesn't exist.
-            GetInput(localDoc, "ctl00_B_Center_VoturiPlen1_chkPaginare").IsChecked = false;
-            SetHtmlEvent(localDoc, "ctl00$B_Center$VoturiPlen1$chkPaginare", "");
+            GetInput(liveDocument, "ctl00_B_Center_VoturiPlen1_chkPaginare").IsChecked = false;
+            SetLiveHtmlEvent("ctl00$B_Center$VoturiPlen1$chkPaginare", "");
 
-            localDoc = await SubmitMainForm();
+            await SubmitLiveMainForm();
 
             LocalLogger.Trace("Finished generating the initial browser state");
-            return SetLive(liveDocument);
-        }
-
-        private void SetHtmlEvent(IDocument document, string target, string argument)
-        {
-            GetInput(document, "__EVENTTARGET").Value = target;
-            GetInput(document, "__EVENTARGUMENT").Value = argument;
-        }
-
-        private IHtmlInputElement GetInput(IDocument document, string inputId, bool throwException = true)
-        {
-            return GetGenericById<IHtmlInputElement>(document, inputId, throwException);
-        }
-
-        private IHtmlSelectElement GetSelect(IDocument document, string selectId, bool throwException = true)
-        {
-            return GetGenericById<IHtmlSelectElement>(document, selectId, throwException);
-        }
-
-        private T GetGenericById<T>(IDocument document, string elementId, bool throwException = true)
-            where T : class, IHtmlElement
-        {
-            var selector = "#" + elementId;
-            var element = document.QuerySelector(selector);
-            if (!throwException)
-            {
-                return element as T;
-            }
-
-            if (element == null || !(element is T))
-            {
-                throw new UnexpectedPageContentException("Failed finding element by ID using CSS selector " + selector + ", for type " + typeof(T).ToString());
-            }
-            return (T)element;
+            return SetLiveDocument(liveDocument);
         }
 
         protected override string GetBaseUrl()
