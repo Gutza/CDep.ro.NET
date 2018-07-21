@@ -1,4 +1,5 @@
 ﻿using AngleSharp;
+using AngleSharp.Css.Values;
 using AngleSharp.Dom;
 using AngleSharp.Dom.Html;
 using AngleSharp.Network.Default;
@@ -10,12 +11,20 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace ro.stancescu.CDep.ScraperLibrary
 {
     public class SenateCalendarScraper
     {
+        class CalendarDateDTO
+        {
+            public string DayOfMonth;
+
+            public string UniqueDateIndex;
+        }
+
         private const string baseUrl = "https://www.senat.ro/Voturiplen.aspx";
         private Logger LocalLogger = null;
 
@@ -33,7 +42,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
             var initialDocument = await GetInitialDocument();
             var jan2018Document = await SetMonthIndex(initialDocument, "2017", "1");
             var jan2018inner = jan2018Document.Body.InnerHtml;
-
+            var days = GetValidDates(jan2018Document);
             //SetDateIndex(initialDocument, "6745");
             //var bar = await SubmitMainForm(initialDocument);
 
@@ -43,6 +52,44 @@ namespace ro.stancescu.CDep.ScraperLibrary
         private void SetDateIndex(IDocument document, string dateIndex)
         {
             SetHtmlEvent(document, "ctl00$B_Center$VoturiPlen1$calVOT", dateIndex);
+        }
+
+        private List<CalendarDateDTO> GetValidDates(IDocument document)
+        {
+            var regexp = new Regex(@"(\d+)'\)$");
+            var cssCyan = Color.FromHex("0ff").ToString();
+            var result = new List<CalendarDateDTO>();
+            var cells = document.QuerySelectorAll("#ctl00_B_Center_VoturiPlen1_calVOT > tbody > tr > td");
+            foreach (var cell in cells)
+            {
+                if (cell.Style == null || !cssCyan.Equals(cell.Style.BackgroundColor))
+                {
+                    continue;
+                }
+
+                var anchor = cell.FirstChild as IHtmlAnchorElement;
+                if (anchor == null)
+                {
+                    LocalLogger.Warn("Found a cyan TD in the calendar which doesn't have an anchor as its first child: «" + cell.OuterHtml + "»");
+                    continue;
+                }
+
+                // anchor.Href ~ javascript:__doPostBack('ctl00$B_Center$VoturiPlen1$calVOT','6225')
+                var match = regexp.Match(anchor.Href);
+                if (!match.Success)
+                {
+                    LocalLogger.Warn("Found an anchor in a cyan TD in the calendar which doesn't match the regular expression: «" + anchor.OuterHtml + "»");
+                    continue;
+                }
+
+                result.Add(new CalendarDateDTO()
+                {
+                    UniqueDateIndex = match.Groups[1].Value,
+                    DayOfMonth = anchor.Text,
+                });
+            }
+
+            return result;
         }
 
         private async Task<IDocument> SetMonthIndex(IDocument document, string year, string month)
@@ -65,7 +112,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
             requester.Headers["User-Agent"] = "Mozilla";
 
             // Setup the configuration to support document loading
-            var config = Configuration.Default.WithDefaultLoader(requesters: new[] { requester });
+            var config = Configuration.Default.WithDefaultLoader(requesters: new[] { requester }).WithCss();
 
             // Load the names of all The Big Bang Theory episodes from Wikipedia
             var address = baseUrl;
@@ -107,7 +154,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
             {
                 return element as T;
             }
-            
+
             if (element == null || !(element is T))
             {
                 throw new UnexpectedPageContentException("Failed finding element by ID using CSS selector " + selector + ", for type " + typeof(T).ToString());
