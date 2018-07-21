@@ -27,6 +27,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
         private const string baseUrl = "https://www.senat.ro/Voturiplen.aspx";
         private Logger LocalLogger = null;
+        private const int RETRY_COUNT = 3;
 
         public void Execute()
         {
@@ -34,19 +35,32 @@ namespace ro.stancescu.CDep.ScraperLibrary
             {
                 LocalLogger = LogManager.GetCurrentClassLogger();
             }
+
             _Execute();
         }
 
+        /// <remarks>
+        /// All exceptions must be caught at this level, not above.
+        /// The reason is related to the fact that we're returning void from this method.
+        /// For details see https://stackoverflow.com/questions/5383310/catch-an-exception-thrown-by-an-async-method
+        /// </remarks>
         private async void _Execute()
         {
-            var initialDocument = await GetInitialDocument();
-            var jan2018Document = await SetMonthIndex(initialDocument, "2017", "1");
-            var jan2018inner = jan2018Document.Body.InnerHtml;
-            var days = GetValidDates(jan2018Document);
-            //SetDateIndex(initialDocument, "6745");
-            //var bar = await SubmitMainForm(initialDocument);
+            try
+            {
+                var initialDocument = await GetInitialDocument();
+                var jan2018Document = await SetMonthIndex(initialDocument, "2017", "1");
+                var jan2018inner = jan2018Document.Body.InnerHtml;
+                var days = GetValidDates(jan2018Document);
+                //SetDateIndex(initialDocument, "6745");
+                //var bar = await SubmitMainForm(initialDocument);
 
-            //var barInner = jan2018Document.Body.InnerHtml;
+                //var barInner = jan2018Document.Body.InnerHtml;
+            }
+            catch (Exception ex)
+            {
+                LocalLogger.Fatal(ex, "Exception thrown in the Senate scraper.");
+            }
         }
 
         private void SetDateIndex(IDocument document, string dateIndex)
@@ -120,6 +134,12 @@ namespace ro.stancescu.CDep.ScraperLibrary
             // Asynchronously get the document in a new context using the configuration
             var initialRequest = await BrowsingContext.New(config).OpenAsync(address);
 
+            for (var i = 0; !IsDocumentValid(initialRequest) && i < RETRY_COUNT; i++)
+            {
+                LocalLogger.Warn("Failed retrieving the initial browser (attempt " + (i + 1) + "/" + RETRY_COUNT + ")");
+                initialRequest = await BrowsingContext.New(config).OpenAsync(address);
+            }
+
             // Uncheck the pagination option. Throw exception if it doesn't exist.
             GetInput(initialRequest, "ctl00_B_Center_VoturiPlen1_chkPaginare").IsChecked = false;
             SetHtmlEvent(initialRequest, "ctl00$B_Center$VoturiPlen1$chkPaginare", "");
@@ -164,7 +184,20 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
         private async Task<IDocument> SubmitMainForm(IDocument document)
         {
-            return await ((IHtmlFormElement)document.QuerySelector("#aspnetForm")).SubmitAsync();
+            var result = await ((IHtmlFormElement)document.QuerySelector("#aspnetForm")).SubmitAsync();
+
+            for (var i = 0; !IsDocumentValid(result) && i < RETRY_COUNT; i++)
+            {
+                LocalLogger.Warn("Failed submitting the main ASP.Net form (attempt " + (i + 1) + "/" + RETRY_COUNT + ")");
+                result = await ((IHtmlFormElement)document.QuerySelector("#aspnetForm")).SubmitAsync();
+            }
+
+            return result;
+        }
+
+        private bool IsDocumentValid(IDocument document)
+        {
+            return document.StatusCode == HttpStatusCode.OK && document.Body.ChildElementCount > 0;
         }
     }
 }
