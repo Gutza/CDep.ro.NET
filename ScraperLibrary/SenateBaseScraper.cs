@@ -22,7 +22,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
         protected Logger LocalLogger = null;
 
         /// <summary>
-        /// The number of netwoek retries.
+        /// The number of network retries.
         /// Should be obeyed by all descendants.
         /// </summary>
         protected const int RETRY_COUNT = 3;
@@ -61,8 +61,10 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
         /// <summary>
         /// Retrieves the initial document for all descendants from the URL at <see cref="GetBaseUrl"/>.
+        /// Guaranteed to return a valid document.
         /// </summary>
         /// <returns></returns>
+        /// <exception cref="NetworkFailureConnectionException">Thrown if the resulting document is invalid.</exception>
         protected async Task<IDocument> GetLiveBaseDocument()
         {
             var requester = new HttpRequester();
@@ -157,6 +159,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
         /// </summary>
         /// <param name="target">The new value for the __EVENTTARGET</param>
         /// <param name="argument">The new value for the __EVENTARGUMENT</param>
+        /// <exception cref="UnexpectedPageContentException">Thrown if any of the elements are not found.</exception>
         protected void SetLiveHtmlEvent(string target, string argument)
         {
             GetInput(liveDocument, "__EVENTTARGET").Value = target;
@@ -174,6 +177,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
         /// If false, it returns null under the same circumstances.
         /// </param>
         /// <returns>The INPUT element identified by the specified ID, or null if not found and parameter <paramref name="throwException"/> is set to false.</returns>
+        /// <exception cref="UnexpectedPageContentException">Thrown if <paramref name="throwException"/> is true, and no appropriate element is found.</exception>
         protected IHtmlInputElement GetInput(IDocument document, string inputId, bool throwException = true)
         {
             return GetGenericById<IHtmlInputElement>(document, inputId, throwException);
@@ -190,6 +194,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
         /// If false, it returns null under the same circumstances.
         /// </param>
         /// <returns>The INPUT element identified by the specified ID, or null if not found and parameter <paramref name="throwException"/> is set to false.</returns>
+        /// <exception cref="UnexpectedPageContentException">Thrown if <paramref name="throwException"/> is true, and no appropriate element is found.</exception>
         protected IHtmlSelectElement GetSelect(IDocument document, string selectId, bool throwException = true)
         {
             return GetGenericById<IHtmlSelectElement>(document, selectId, throwException);
@@ -207,6 +212,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
         /// If false, it returns null under the same circumstances.
         /// </param>
         /// <returns>The element identified by the specified ID, or null if not found and parameter <paramref name="throwException"/> is set to false.</returns>
+        /// <exception cref="UnexpectedPageContentException">Thrown if <paramref name="throwException"/> is true, and no appropriate element is found.</exception>
         protected THtmlType GetGenericById<THtmlType>(IDocument document, string elementId, bool throwException = true)
             where THtmlType : class, IHtmlElement
         {
@@ -223,7 +229,5 @@ namespace ro.stancescu.CDep.ScraperLibrary
             }
             return (THtmlType)element;
         }
-
-
     }
 }

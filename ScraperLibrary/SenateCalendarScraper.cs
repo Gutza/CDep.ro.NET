@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 
 namespace ro.stancescu.CDep.ScraperLibrary
 {
+    // N.B.: History starts in September 2005
     public class SenateCalendarScraper: SenateBaseScraper
     {
         class SenateCalendarDateDTO
@@ -91,9 +92,17 @@ namespace ro.stancescu.CDep.ScraperLibrary
             return result;
         }
 
-        private async Task<IDocument> SetLiveMonthIndex(IDocument document, int year, int month)
+        /// <summary>
+        /// Sets the year and month index for the <see cref="SenateBaseScraper.liveDocument"/>.
+        /// 
+        /// </summary>
+        /// <param name="document"></param>
+        /// <param name="year"></param>
+        /// <param name="month"></param>
+        /// <returns></returns>
+        private async Task<IDocument> SetLiveMonthIndex(int year, int month)
         {
-            GetSelect(document, "ctl00_B_Center_VoturiPlen1_drpYearCal").Value = year.ToString();
+            GetSelect(liveDocument, "ctl00_B_Center_VoturiPlen1_drpYearCal").Value = year.ToString();
             SetLiveHtmlEvent("ctl00$B_Center$VoturiPlen1$drpYearCal", year.ToString());
 
             var docYear = await SubmitLiveMainForm();
@@ -114,6 +123,13 @@ namespace ro.stancescu.CDep.ScraperLibrary
             return liveDocument;
         }
 
+        /// <summary>
+        /// Retrieves the initial document state for the calendar scraper.
+        /// Always works on the live document.
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="UnexpectedPageContentException">Thrown by <see cref="SenateBaseScraper.SetLiveHtmlEvent(string, string)"/> if the pagination element is not found.</exception>
+        /// <exception cref="NetworkFailureConnectionException">Thrown by <see cref="SenateBaseScraper.SubmitLiveMainForm"/> if the live document is invalid.</exception>
         private async Task<IDocument> GetLiveInitialDocument()
         {
             LocalLogger.Trace("Generating the initial browser state");
