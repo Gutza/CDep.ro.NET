@@ -13,102 +13,8 @@ using System.Threading.Tasks;
 
 namespace ro.stancescu.CDep.ScraperLibrary
 {
-    public abstract class SenateBaseScraper
+    public abstract class SenateAspScraper: SenateNetworkScraper
     {
-        /// <summary>
-        /// The local <see cref="Logger"/>.
-        /// Guaranteeed to be set in all descendants.
-        /// </summary>
-        protected Logger LocalLogger = null;
-
-        /// <summary>
-        /// The number of network retries.
-        /// Should be obeyed by all descendants.
-        /// </summary>
-        protected const int RETRY_COUNT = 3;
-
-        /// <summary>
-        /// The current live document entity.
-        /// Must be used by all methods which actually need to
-        /// actually access the network.
-        /// </summary>
-        protected IDocument liveDocument = null;
-
-        /// <summary>
-        /// The only public entry point for all descendants.
-        /// </summary>
-        public void Execute()
-        {
-            if (LocalLogger == null)
-            {
-                LocalLogger = LogManager.GetCurrentClassLogger();
-            }
-
-            _Execute();
-        }
-
-        /// <summary>
-        /// The concrete entry point for all descendants.
-        /// Called by <see cref="Execute"/>.
-        /// </summary>
-        protected abstract void _Execute();
-
-        /// <summary>
-        /// The base URL for all descendants.
-        /// </summary>
-        /// <returns></returns>
-        protected abstract string GetBaseUrl();
-
-        /// <summary>
-        /// Retrieves the initial document for all descendants from the URL at <see cref="GetBaseUrl"/>.
-        /// Guaranteed to return a valid document.
-        /// </summary>
-        /// <returns></returns>
-        /// <exception cref="NetworkFailureConnectionException">Thrown if the resulting document is invalid.</exception>
-        protected async Task<IDocument> GetLiveBaseDocument()
-        {
-            var requester = new HttpRequester();
-            requester.Headers["User-Agent"] = "Mozilla";
-
-            // Setup the configuration to support document loading
-            var config = AngleSharp.Configuration.Default.WithDefaultLoader(requesters: new[] { requester }).WithCss();
-
-            // Load the names of all The Big Bang Theory episodes from Wikipedia
-            var address = GetBaseUrl();
-
-            // Asynchronously get the document in a new context using the configuration
-            var newDocument = await BrowsingContext.New(config).OpenAsync(address);
-
-            bool valid;
-            for (var i = 0; !(valid = IsDocumentValid(newDocument)) && i < RETRY_COUNT; i++)
-            {
-                LocalLogger.Warn("Failed retrieving the initial browser (attempt " + (i + 1) + "/" + RETRY_COUNT + ")");
-                newDocument = await BrowsingContext.New(config).OpenAsync(address);
-            }
-
-            if (!valid)
-            {
-                throw new NetworkFailureConnectionException("Failed retrieving the base document from " + address + "!");
-            }
-
-            liveDocument = newDocument;
-            return newDocument;
-        }
-
-        /// <summary>
-        /// Verifies if <paramref name="document"/> has <see cref="IDocument.StatusCode"/> == <see cref="HttpStatusCode.OK"/>,
-        /// and that it contains children.
-        /// Works on any <see cref="IDocument"/> entity.
-        /// </summary>
-        /// <param name="document">The document to verify.</param>
-        /// <returns>True if the document is valid, false otherwise.</returns>
-        protected bool IsDocumentValid(IDocument document)
-        {
-            return
-                document.StatusCode == HttpStatusCode.OK &&
-                document.Body.ChildElementCount > 0;
-        }
-
         /// <summary>
         /// Submits the ASP.Net form in the <see cref="liveDocument"/>.
         /// Guaranteed alive and valid.
@@ -117,22 +23,22 @@ namespace ro.stancescu.CDep.ScraperLibrary
         /// <exception cref="NetworkFailureConnectionException">Thrown when the result is not a valid document.</exception>
         protected async Task<IDocument> SubmitLiveMainForm()
         {
-            var newDoc = await ((IHtmlFormElement)liveDocument.QuerySelector("#aspnetForm")).SubmitAsync();
+            var newDoc = await ((IHtmlFormElement)LiveDocument.QuerySelector("#aspnetForm")).SubmitAsync();
 
             bool valid;
             for (var i = 0; !(valid=IsDocumentValid(newDoc)) && i < RETRY_COUNT; i++)
             {
                 LocalLogger.Warn("Failed submitting the main ASP.Net form (attempt " + (i + 1) + "/" + RETRY_COUNT + ")");
-                newDoc = await ((IHtmlFormElement)liveDocument.QuerySelector("#aspnetForm")).SubmitAsync();
+                newDoc = await ((IHtmlFormElement)LiveDocument.QuerySelector("#aspnetForm")).SubmitAsync();
             }
 
             if (!valid)
             {
                 throw new NetworkFailureConnectionException("Failed submitting the main ASP.Net form!");
             }
-            liveDocument = newDoc;
+            LiveDocument = newDoc;
 
-            return liveDocument;
+            return LiveDocument;
         }
 
         /// <summary>
@@ -148,8 +54,8 @@ namespace ro.stancescu.CDep.ScraperLibrary
                 return document;
             }
 
-            liveDocument = document;
-            return liveDocument;
+            LiveDocument = document;
+            return LiveDocument;
         }
 
         /// <summary>
@@ -162,8 +68,8 @@ namespace ro.stancescu.CDep.ScraperLibrary
         /// <exception cref="UnexpectedPageContentException">Thrown if any of the elements are not found.</exception>
         protected void SetLiveHtmlEvent(string target, string argument)
         {
-            GetInput(liveDocument, "__EVENTTARGET").Value = target;
-            GetInput(liveDocument, "__EVENTARGUMENT").Value = argument;
+            GetInput(LiveDocument, "__EVENTTARGET").Value = target;
+            GetInput(LiveDocument, "__EVENTARGUMENT").Value = argument;
         }
 
         /// <summary>

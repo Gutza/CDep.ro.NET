@@ -13,11 +13,12 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using AngleSharp.Extensions;
 
 namespace ro.stancescu.CDep.ScraperLibrary
 {
     // N.B.: History starts in September 2005
-    public class SenateCalendarScraper: SenateBaseScraper
+    public class SenateCalendarScraper : SenateAspScraper
     {
         class SenateCalendarDateDTO
         {
@@ -34,10 +35,12 @@ namespace ro.stancescu.CDep.ScraperLibrary
         {
             try
             {
-                var initialDocument = await GetLiveInitialDocument();
-                var jan2018Document = await SetLiveMonthIndex(initialDocument, 2017, 1);
-                var jan2018inner = jan2018Document.Body.InnerHtml;
-                var days = GetValidDates(jan2018Document);
+                var jan2017 = await GetYearMonthDocument(2017, 1);
+
+                //var initialDocument = await GetLiveBaseDocument();
+                //var jan2018Document = await SetLiveMonthIndex(2017, 1);
+                //var jan2018inner = jan2018Document.Body.InnerHtml;
+                var days = GetValidDates(jan2017);
                 //SetDateIndex(initialDocument, "6745");
                 //var bar = await SubmitMainForm(initialDocument);
 
@@ -49,11 +52,45 @@ namespace ro.stancescu.CDep.ScraperLibrary
             }
         }
 
+        protected async Task<IDocument> GetYearMonthDocument(int year, int month)
+        {
+            var cacheId = String.Format("senate-voteCalendar-ym-{0}-{1}", year, month);
+            var doc = GetCached(cacheId);
+            if (doc != null)
+            {
+                return doc;
+            }
+
+            await GetLiveBaseDocument();
+            if (!IsDocumentValid())
+            {
+                throw new NetworkFailureConnectionException("Failed setting the year/month to " + year + "-" + month.ToString("D2"));
+            }
+            await SetLiveMonthIndex(year, month);
+            if (!IsDocumentValid())
+            {
+                throw new NetworkFailureConnectionException("Failed setting the year/month to " + year + "-" + month.ToString("D2"));
+            }
+            SaveCached(cacheId, LiveDocument.ToHtml());
+            return LiveDocument;
+        }
+
+        /// <summary>
+        /// Sets the date index for the live document.
+        /// Always works on the live document.
+        /// </summary>
+        /// <param name="dateIndex"></param>
         private void SetLiveDateIndex(string dateIndex)
         {
             SetLiveHtmlEvent("ctl00$B_Center$VoturiPlen1$calVOT", dateIndex);
         }
 
+        /// <summary>
+        /// Retrieves the valid dates in the specified document.
+        /// Works on any document.
+        /// </summary>
+        /// <param name="document"></param>
+        /// <returns></returns>
         private List<SenateCalendarDateDTO> GetValidDates(IDocument document)
         {
             var regexp = new Regex(@"(\d+)'\)$");
@@ -93,8 +130,8 @@ namespace ro.stancescu.CDep.ScraperLibrary
         }
 
         /// <summary>
-        /// Sets the year and month index for the <see cref="SenateBaseScraper.liveDocument"/>.
-        /// 
+        /// Sets the year and month index for the <see cref="SenateAspScraper.liveDocument"/>.
+        /// Always works on the live document.
         /// </summary>
         /// <param name="document"></param>
         /// <param name="year"></param>
@@ -102,7 +139,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
         /// <returns></returns>
         private async Task<IDocument> SetLiveMonthIndex(int year, int month)
         {
-            GetSelect(liveDocument, "ctl00_B_Center_VoturiPlen1_drpYearCal").Value = year.ToString();
+            GetSelect(LiveDocument, "ctl00_B_Center_VoturiPlen1_drpYearCal").Value = year.ToString();
             SetLiveHtmlEvent("ctl00$B_Center$VoturiPlen1$drpYearCal", year.ToString());
 
             var docYear = await SubmitLiveMainForm();
@@ -119,8 +156,8 @@ namespace ro.stancescu.CDep.ScraperLibrary
                 throw new NetworkFailureConnectionException("Failed switching to month " + year + "-" + month.ToString("D2"));
             }
 
-            liveDocument = docMonth;
-            return liveDocument;
+            LiveDocument = docMonth;
+            return LiveDocument;
         }
 
         /// <summary>
@@ -128,24 +165,33 @@ namespace ro.stancescu.CDep.ScraperLibrary
         /// Always works on the live document.
         /// </summary>
         /// <returns></returns>
-        /// <exception cref="UnexpectedPageContentException">Thrown by <see cref="SenateBaseScraper.SetLiveHtmlEvent(string, string)"/> if the pagination element is not found.</exception>
-        /// <exception cref="NetworkFailureConnectionException">Thrown by <see cref="SenateBaseScraper.SubmitLiveMainForm"/> if the live document is invalid.</exception>
-        private async Task<IDocument> GetLiveInitialDocument()
+        /// <exception cref="UnexpectedPageContentException">Thrown by <see cref="SenateAspScraper.SetLiveHtmlEvent(string, string)"/> if the pagination element is not found.</exception>
+        /// <exception cref="NetworkFailureConnectionException">Thrown by <see cref="SenateAspScraper.SubmitLiveMainForm"/> if the live document is invalid.</exception>
+        protected override async Task<IDocument> GetLiveBaseDocument()
         {
+            if (LiveDocument != null)
+            {
+                return LiveDocument;
+            }
+
             LocalLogger.Trace("Generating the initial browser state");
 
-            await GetLiveBaseDocument();
+            await base.GetLiveBaseDocument();
 
             // Uncheck the pagination option. Throw exception if it doesn't exist.
-            GetInput(liveDocument, "ctl00_B_Center_VoturiPlen1_chkPaginare").IsChecked = false;
+            GetInput(LiveDocument, "ctl00_B_Center_VoturiPlen1_chkPaginare").IsChecked = false;
             SetLiveHtmlEvent("ctl00$B_Center$VoturiPlen1$chkPaginare", "");
 
             await SubmitLiveMainForm();
 
             LocalLogger.Trace("Finished generating the initial browser state");
-            return SetLiveDocument(liveDocument);
+            return SetLiveDocument(LiveDocument);
         }
 
+        /// <summary>
+        /// Returns the base URL for the current scraper class.
+        /// </summary>
+        /// <returns></returns>
         protected override string GetBaseUrl()
         {
             return "https://www.senat.ro/Voturiplen.aspx";
