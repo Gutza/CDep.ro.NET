@@ -18,43 +18,12 @@ using AngleSharp.Extensions;
 namespace ro.stancescu.CDep.ScraperLibrary
 {
     // N.B.: History starts in September 2005
-    public class SenateCalendarScraper : SenateAspScraper
+    internal class SenateCalendarScraper : SenateAspScraper
     {
-        class SenateCalendarDateDTO
+        private const string CALENDAR_VOTE_DAY_CACHE_FORMAT = "senate-voteCalendar-ym-{0}-{1}-{2}";
+        internal async Task<IDocument> GetYearMonthDocument(int year, int month)
         {
-            public string DayOfMonth;
-            public string UniqueDateIndex;
-        }
-
-        /// <remarks>
-        /// All exceptions must be caught at this level, not above.
-        /// The reason is related to the fact that we're returning void from this method.
-        /// For details see https://stackoverflow.com/questions/5383310/catch-an-exception-thrown-by-an-async-method
-        /// </remarks>
-        protected override async void _Execute()
-        {
-            try
-            {
-                var jan2017 = await GetYearMonthDocument(2017, 1);
-
-                //var initialDocument = await GetLiveBaseDocument();
-                //var jan2018Document = await SetLiveMonthIndex(2017, 1);
-                //var jan2018inner = jan2018Document.Body.InnerHtml;
-                var days = GetValidDates(jan2017);
-                //SetDateIndex(initialDocument, "6745");
-                //var bar = await SubmitMainForm(initialDocument);
-
-                //var barInner = jan2018Document.Body.InnerHtml;
-            }
-            catch (Exception ex)
-            {
-                LocalLogger.Fatal(ex, "Exception thrown in the Senate scraper.");
-            }
-        }
-
-        protected async Task<IDocument> GetYearMonthDocument(int year, int month)
-        {
-            var cacheId = String.Format("senate-voteCalendar-ym-{0}-{1}", year, month);
+            var cacheId = String.Format(CALENDAR_VOTE_DAY_CACHE_FORMAT, year, month.ToString("D2"), "01");
             var doc = GetCached(cacheId);
             if (doc != null)
             {
@@ -64,7 +33,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
             await GetLiveBaseDocument();
             if (!IsDocumentValid())
             {
-                throw new NetworkFailureConnectionException("Failed setting the year/month to " + year + "-" + month.ToString("D2"));
+                throw new NetworkFailureConnectionException("Failed retrieving the live document!");
             }
             await SetLiveMonthIndex(year, month);
             if (!IsDocumentValid())
@@ -75,14 +44,29 @@ namespace ro.stancescu.CDep.ScraperLibrary
             return LiveDocument;
         }
 
+        internal async Task<IDocument> GetYearMonthDayDocument(SenateCalendarDateDTO dateDescriptor)
+        {
+            var date = new DateTime(1998, 1, 1).AddDays(int.Parse(dateDescriptor.UniqueDateIndex)+730);
+            var cacheId = String.Format(CALENDAR_VOTE_DAY_CACHE_FORMAT, date.Year, date.Month.ToString("D2"), date.Day.ToString("D2"));
+            var doc = GetCached(cacheId);
+            if (doc!=null)
+            {
+                return doc;
+            }
+            await GetLiveBaseDocument();
+            SetLiveDateIndexAsync(dateDescriptor);
+            SaveCached(cacheId, LiveDocument.ToHtml());
+            return LiveDocument;
+        }
+
         /// <summary>
         /// Sets the date index for the live document.
         /// Always works on the live document.
         /// </summary>
         /// <param name="dateIndex"></param>
-        private void SetLiveDateIndex(string dateIndex)
+        protected void SetLiveDateIndexAsync(SenateCalendarDateDTO dateIndex)
         {
-            SetLiveHtmlEvent("ctl00$B_Center$VoturiPlen1$calVOT", dateIndex);
+            SetLiveHtmlEvent("ctl00$B_Center$VoturiPlen1$calVOT", dateIndex.UniqueDateIndex);
         }
 
         /// <summary>
@@ -91,7 +75,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
         /// </summary>
         /// <param name="document"></param>
         /// <returns></returns>
-        private List<SenateCalendarDateDTO> GetValidDates(IDocument document)
+        internal List<SenateCalendarDateDTO> GetValidDates(IDocument document)
         {
             var regexp = new Regex(@"(\d+)'\)$");
             var cssCyan = Color.FromHex("0ff").ToString();
@@ -137,26 +121,26 @@ namespace ro.stancescu.CDep.ScraperLibrary
         /// <param name="year"></param>
         /// <param name="month"></param>
         /// <returns></returns>
-        private async Task<IDocument> SetLiveMonthIndex(int year, int month)
+        internal async Task<IDocument> SetLiveMonthIndex(int year, int month)
         {
             GetSelect(LiveDocument, "ctl00_B_Center_VoturiPlen1_drpYearCal").Value = year.ToString();
             SetLiveHtmlEvent("ctl00$B_Center$VoturiPlen1$drpYearCal", year.ToString());
 
-            var docYear = await SubmitLiveMainForm();
-            if (!IsDocumentValid(docYear))
+            await SubmitLiveMainForm();
+            if (!IsDocumentValid())
             {
                 throw new NetworkFailureConnectionException("Failed switching to year " + year);
             }
 
-            GetSelect(docYear, "ctl00_B_Center_VoturiPlen1_drpMonthCal").Value = month.ToString();
+            GetSelect(LiveDocument, "ctl00_B_Center_VoturiPlen1_drpMonthCal").Value = month.ToString();
             SetLiveHtmlEvent("ctl00$B_Center$VoturiPlen1$drpMonthCal", month.ToString());
-            var docMonth = await SubmitLiveMainForm();
-            if (!IsDocumentValid(docMonth))
+
+            await SubmitLiveMainForm();
+            if (!IsDocumentValid())
             {
                 throw new NetworkFailureConnectionException("Failed switching to month " + year + "-" + month.ToString("D2"));
             }
 
-            LiveDocument = docMonth;
             return LiveDocument;
         }
 

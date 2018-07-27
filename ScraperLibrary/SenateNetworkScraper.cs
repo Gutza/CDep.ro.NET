@@ -35,21 +35,13 @@ namespace ro.stancescu.CDep.ScraperLibrary
         /// <summary>
         /// The only public entry point for all descendants.
         /// </summary>
-        public void Execute()
+        public virtual void Init()
         {
             if (LocalLogger == null)
             {
                 LocalLogger = LogManager.GetCurrentClassLogger();
             }
-
-            _Execute();
         }
-
-        /// <summary>
-        /// The concrete entry point for all descendants.
-        /// Called by <see cref="Execute"/>.
-        /// </summary>
-        protected abstract void _Execute();
 
         /// <summary>
         /// The base URL for all descendants.
