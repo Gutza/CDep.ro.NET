@@ -11,13 +11,46 @@ using System.Threading.Tasks;
 
 namespace ro.stancescu.CDep.ScraperLibrary
 {
+    internal enum CacheModes
+    {
+        InvalidCacheMode = 0,
+        Normal,
+        ReadOnly,
+        WriteOnly,
+    }
+
     public abstract class BaseDocumentCache
     {
+        [Flags]
+        private enum  CacheTypes
+        {
+            InvalidCacheType = 0,
+            Readable,
+            Writable,
+        }
+
+        private Dictionary<CacheModes, CacheTypes> CacheDict = new Dictionary<CacheModes, CacheTypes>()
+        {
+            { CacheModes.InvalidCacheMode, CacheTypes.InvalidCacheType },
+            { CacheModes.ReadOnly, CacheTypes.Readable },
+            { CacheModes.WriteOnly, CacheTypes.Writable },
+            { CacheModes.Normal, CacheTypes.Readable | CacheTypes.Writable },
+        };
+
+        internal CacheModes CacheMode = CacheModes.Normal;
+
         private SHA256 ShaGenerator = null;
         private HtmlParser Parser = null;
 
+        public abstract string GetCurrentHtml();
+
         protected IDocument GetCached(string cacheId)
         {
+            if (!CacheDict[CacheMode].HasFlag(CacheTypes.Readable))
+            {
+                return null;
+            }
+
             using (var source = GetCacheReadStream(cacheId))
             {
                 if (source == null)
@@ -34,8 +67,13 @@ namespace ro.stancescu.CDep.ScraperLibrary
             }
         }
 
-        protected async void SaveCached(string cacheId, string content)
+        protected async void SaveCached(string cacheId)
         {
+            if (!CacheDict[CacheMode].HasFlag(CacheTypes.Writable))
+            {
+                return;
+            }
+
             var pathList = GetCachePathList(cacheId);
             var filePath = Path.Combine(pathList.ToArray());
             pathList.RemoveAt(pathList.Count - 1);
@@ -49,7 +87,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
             using (var fp = File.OpenWrite(filePath))
             {
                 fp.SetLength(0); // Remove the old cache content, if any
-                var stringBuffer = Encoding.UTF8.GetBytes(content);
+                var stringBuffer = Encoding.UTF8.GetBytes(GetCurrentHtml());
                 await fp.WriteAsync(stringBuffer, 0, stringBuffer.Length);
             }
         }

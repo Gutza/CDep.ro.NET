@@ -21,6 +21,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
     internal class SenateCalendarScraper : SenateAspScraper
     {
         private const string CALENDAR_VOTE_DAY_CACHE_FORMAT = "senate-voteCalendar-ym-{0}-{1}-{2}";
+
         internal async Task<IDocument> GetYearMonthDocument(int year, int month)
         {
             var cacheId = String.Format(CALENDAR_VOTE_DAY_CACHE_FORMAT, year, month.ToString("D2"), "01");
@@ -40,13 +41,18 @@ namespace ro.stancescu.CDep.ScraperLibrary
             {
                 throw new NetworkFailureConnectionException("Failed setting the year/month to " + year + "-" + month.ToString("D2"));
             }
-            SaveCached(cacheId, LiveDocument.ToHtml());
+            SaveCached(cacheId);
             return LiveDocument;
+        }
+
+        protected DateTime DateTimeFromDateIndex(int dateIndex)
+        {
+            return new DateTime(1998, 1, 1).AddDays(dateIndex + 730);
         }
 
         internal async Task<IDocument> GetYearMonthDayDocument(SenateCalendarDateDTO dateDescriptor)
         {
-            var date = new DateTime(1998, 1, 1).AddDays(int.Parse(dateDescriptor.UniqueDateIndex)+730);
+            var date = DateTimeFromDateIndex(dateDescriptor.UniqueDateIndex);
             var cacheId = String.Format(CALENDAR_VOTE_DAY_CACHE_FORMAT, date.Year, date.Month.ToString("D2"), date.Day.ToString("D2"));
             var doc = GetCached(cacheId);
             if (doc!=null)
@@ -55,7 +61,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
             }
             await GetLiveBaseDocument();
             SetLiveDateIndexAsync(dateDescriptor);
-            SaveCached(cacheId, LiveDocument.ToHtml());
+            SaveCached(cacheId);
             return LiveDocument;
         }
 
@@ -66,7 +72,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
         /// <param name="dateIndex"></param>
         protected void SetLiveDateIndexAsync(SenateCalendarDateDTO dateIndex)
         {
-            SetLiveHtmlEvent("ctl00$B_Center$VoturiPlen1$calVOT", dateIndex.UniqueDateIndex);
+            SetLiveHtmlEvent("ctl00$B_Center$VoturiPlen1$calVOT", dateIndex.UniqueDateIndex.ToString());
         }
 
         /// <summary>
@@ -103,9 +109,15 @@ namespace ro.stancescu.CDep.ScraperLibrary
                     continue;
                 }
 
+                int dateIndex;
+                if (!int.TryParse(match.Groups[1].Value, out dateIndex))
+                {
+                    throw new UnexpectedPageContentException("The date index is not an integer while attempting to retrieve the valid dates! Value = " + match.Groups[1].Value);
+                }
+
                 result.Add(new SenateCalendarDateDTO()
                 {
-                    UniqueDateIndex = match.Groups[1].Value,
+                    UniqueDateIndex = dateIndex,
                     DayOfMonth = anchor.Text,
                 });
             }

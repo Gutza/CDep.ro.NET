@@ -1,5 +1,6 @@
 ﻿using AngleSharp;
 using AngleSharp.Dom;
+using AngleSharp.Extensions;
 using AngleSharp.Network.Default;
 using NLog;
 using System;
@@ -110,6 +111,9 @@ namespace ro.stancescu.CDep.ScraperLibrary
                 document.Body.ChildElementCount > 0;
         }
 
-
+        public override string GetCurrentHtml()
+        {
+            return LiveDocument.ToHtml();
+        }
     }
 }

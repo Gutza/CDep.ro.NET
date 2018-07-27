@@ -9,6 +9,6 @@ namespace ro.stancescu.CDep.ScraperLibrary
     internal class SenateCalendarDateDTO
     {
         public string DayOfMonth;
-        public string UniqueDateIndex;
+        public int UniqueDateIndex;
     }
 }
