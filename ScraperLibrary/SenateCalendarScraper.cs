@@ -15,12 +15,20 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AngleSharp.Extensions;
 
+// TODO: Ignore cyan dates where color=Gray; example: 2007-09, look at the 3rd, and 6th
+// 2007-09-04 and 2007-10-04 are coincidentally both cyan, and both valid -- but you should never look at a different month
+
 namespace ro.stancescu.CDep.ScraperLibrary
 {
     internal class SenateCalendarScraper : SenateAspScraper
     {
-        private readonly DateTime DateIndexZero = new DateTime(1996, 1, 1);
-        public readonly DateTime HistoryStart = new DateTime(2005, 9, 1);
+        private static readonly DateTime DateIndexZero = new DateTime(1996, 1, 1);
+
+        // The first cyan dates show up in September 2005, but they're actually empty
+        //public static readonly DateTime HistoryStart = new DateTime(2005, 9, 1);
+        
+        // Real data starts showing up beginning with September 2007
+        public static readonly DateTime HistoryStart = new DateTime(2007, 9, 1);
 
         private const string CALENDAR_VOTE_DAY_CACHE_FORMAT = "senate-voteCalendar-ym-{0}-{1}-{2}";
 
@@ -96,11 +104,12 @@ namespace ro.stancescu.CDep.ScraperLibrary
         {
             var regexp = new Regex(@"(\d+)'\)$");
             var cssCyan = Color.FromHex("0ff").ToString();
+            var cssGrey = Color.FromHex("808080").ToString();
             var result = new List<SenateCalendarDateDTO>();
             var cells = document.QuerySelectorAll("#ctl00_B_Center_VoturiPlen1_calVOT > tbody > tr > td");
             foreach (var cell in cells)
             {
-                if (cell.Style == null || !cssCyan.Equals(cell.Style.BackgroundColor))
+                if (cell.Style == null || !cssCyan.Equals(cell.Style.BackgroundColor) || cssGrey.Equals(cell.Style.Color))
                 {
                     continue;
                 }

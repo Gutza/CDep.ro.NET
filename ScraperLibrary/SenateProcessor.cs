@@ -12,12 +12,25 @@ namespace ro.stancescu.CDep.ScraperLibrary
         {
             var calendarScraper = new SenateCalendarScraper();
             calendarScraper.Init();
-            var jan2017 = await calendarScraper.GetYearMonthDocument(2017, 1);
-            var jan2015 = await calendarScraper.GetYearMonthDocument(2015, 1);
-            var datesJan2016 = calendarScraper.GetValidDates(jan2015);
-            foreach(var validDate in datesJan2016)
+
+            var scraperMonthYear = SenateCalendarScraper.HistoryStart;
+            var currentMonthYear = DateTime.Now;
+            while (scraperMonthYear.Year <= currentMonthYear.Year || scraperMonthYear.Month <= currentMonthYear.Month)
             {
-                await calendarScraper.GetYearMonthDayDocument(validDate);
+                Console.WriteLine("Processing month " + scraperMonthYear);
+                var scraperDoc = await calendarScraper.GetYearMonthDocument(scraperMonthYear.Year, scraperMonthYear.Month);
+                var scraperMonthDates = calendarScraper.GetValidDates(scraperDoc);
+                foreach (var scraperDate in scraperMonthDates)
+                {
+                    Console.WriteLine("Processing date index " + scraperDate.UniqueDateIndex);
+                    scraperDoc = await calendarScraper.GetYearMonthDayDocument(scraperDate);
+                    var mainTable = scraperDoc.QuerySelector("#ctl00_B_Center_VoturiPlen1_GridVoturi");
+                    if (mainTable == null)
+                    {
+                        throw new UnexpectedPageContentException("Failed to find the votes table in a presumably cyan document!");
+                    }
+                }
+                scraperMonthYear = scraperMonthYear.AddMonths(1);
             }
         }
     }
