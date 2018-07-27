@@ -17,14 +17,21 @@ using AngleSharp.Extensions;
 
 namespace ro.stancescu.CDep.ScraperLibrary
 {
-    // N.B.: History starts in September 2005
     internal class SenateCalendarScraper : SenateAspScraper
     {
+        private readonly DateTime DateIndexZero = new DateTime(1996, 1, 1);
+        public readonly DateTime HistoryStart = new DateTime(2005, 9, 1);
+
         private const string CALENDAR_VOTE_DAY_CACHE_FORMAT = "senate-voteCalendar-ym-{0}-{1}-{2}";
 
+        private string GetCacheIdForDate(DateTime date)
+        {
+            return String.Format(CALENDAR_VOTE_DAY_CACHE_FORMAT, date.Year, date.Month.ToString("D2"), date.Day.ToString("D2"));
+        }
+        
         internal async Task<IDocument> GetYearMonthDocument(int year, int month)
         {
-            var cacheId = String.Format(CALENDAR_VOTE_DAY_CACHE_FORMAT, year, month.ToString("D2"), "01");
+            var cacheId = GetCacheIdForDate(new DateTime(year, month, 1));
             var doc = GetCached(cacheId);
             if (doc != null)
             {
@@ -47,13 +54,17 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
         protected DateTime DateTimeFromDateIndex(int dateIndex)
         {
-            return new DateTime(1998, 1, 1).AddDays(dateIndex + 730);
+            return DateIndexZero.AddDays(dateIndex);
+        }
+
+        protected int DateIndexFromDateTime(DateTime date)
+        {
+            return (int) DateIndexZero.Subtract(date).TotalDays;
         }
 
         internal async Task<IDocument> GetYearMonthDayDocument(SenateCalendarDateDTO dateDescriptor)
         {
-            var date = DateTimeFromDateIndex(dateDescriptor.UniqueDateIndex);
-            var cacheId = String.Format(CALENDAR_VOTE_DAY_CACHE_FORMAT, date.Year, date.Month.ToString("D2"), date.Day.ToString("D2"));
+            var cacheId = GetCacheIdForDate(DateTimeFromDateIndex(dateDescriptor.UniqueDateIndex));
             var doc = GetCached(cacheId);
             if (doc!=null)
             {
