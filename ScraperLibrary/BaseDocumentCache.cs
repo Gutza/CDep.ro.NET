@@ -51,6 +51,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
                 return null;
             }
 
+            IDocument result = null;
             using (var source = GetCacheReadStream(cacheId))
             {
                 if (source == null)
@@ -62,9 +63,10 @@ namespace ro.stancescu.CDep.ScraperLibrary
                 {
                     Parser = new HtmlParser(Configuration.Default.WithCss());
                 }
-
-                return Parser.Parse(source);
+                result = Parser.Parse(source);
+                source.Close();
             }
+            return result;
         }
 
         protected async void SaveCached(string cacheId)
@@ -89,6 +91,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
                 fp.SetLength(0); // Remove the old cache content, if any
                 var stringBuffer = Encoding.UTF8.GetBytes(GetCurrentHtml());
                 await fp.WriteAsync(stringBuffer, 0, stringBuffer.Length);
+                fp.Close();
             }
         }
 

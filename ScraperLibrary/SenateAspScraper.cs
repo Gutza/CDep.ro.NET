@@ -21,7 +21,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
         /// </summary>
         /// <returns></returns>
         /// <exception cref="NetworkFailureConnectionException">Thrown when the result is not a valid document.</exception>
-        protected async Task<IDocument> SubmitLiveMainForm()
+        protected async Task<IDocument> SubmitLiveAspForm()
         {
             var newDoc = await ((IHtmlFormElement)LiveDocument.QuerySelector("#aspnetForm")).SubmitAsync();
 

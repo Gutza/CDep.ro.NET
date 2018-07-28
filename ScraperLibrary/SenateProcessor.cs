@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NLog;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,7 +16,13 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
             var scraperMonthYear = SenateCalendarScraper.HistoryStart;
             var currentMonthYear = DateTime.Now;
-            while (scraperMonthYear.Year <= currentMonthYear.Year || scraperMonthYear.Month <= currentMonthYear.Month)
+            while (
+                scraperMonthYear.Year < currentMonthYear.Year ||
+                (
+                    scraperMonthYear.Year == currentMonthYear.Year &&
+                    scraperMonthYear.Month <= currentMonthYear.Month
+                )
+            )
             {
                 Console.WriteLine("Processing month " + scraperMonthYear);
                 var scraperDoc = await calendarScraper.GetYearMonthDocument(scraperMonthYear.Year, scraperMonthYear.Month);
@@ -27,7 +34,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
                     var mainTable = scraperDoc.QuerySelector("#ctl00_B_Center_VoturiPlen1_GridVoturi");
                     if (mainTable == null)
                     {
-                        throw new UnexpectedPageContentException("Failed to find the votes table in a presumably cyan document!");
+                        LogManager.GetCurrentClassLogger().Warn("Failed to find the votes table in a presumably cyan document for date " + SenateCalendarScraper.DateTimeFromDateIndex(scraperDate.UniqueDateIndex).ToShortDateString() + "!");
                     }
                 }
                 scraperMonthYear = scraperMonthYear.AddMonths(1);

@@ -22,11 +22,11 @@ namespace ro.stancescu.CDep.ScraperLibrary
 {
     internal class SenateCalendarScraper : SenateAspScraper
     {
-        private static readonly DateTime DateIndexZero = new DateTime(1996, 1, 1);
+        private static readonly DateTime DateIndexZero = new DateTime(2000, 1, 1);
 
         // The first cyan dates show up in September 2005, but they're actually empty
         //public static readonly DateTime HistoryStart = new DateTime(2005, 9, 1);
-        
+
         // Real data starts showing up beginning with September 2007
         public static readonly DateTime HistoryStart = new DateTime(2007, 9, 1);
 
@@ -36,7 +36,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
         {
             return String.Format(CALENDAR_VOTE_DAY_CACHE_FORMAT, date.Year, date.Month.ToString("D2"), date.Day.ToString("D2"));
         }
-        
+
         internal async Task<IDocument> GetYearMonthDocument(int year, int month)
         {
             var cacheId = GetCacheIdForDate(new DateTime(year, month, 1));
@@ -60,26 +60,28 @@ namespace ro.stancescu.CDep.ScraperLibrary
             return LiveDocument;
         }
 
-        protected DateTime DateTimeFromDateIndex(int dateIndex)
+        static public DateTime DateTimeFromDateIndex(int dateIndex)
         {
             return DateIndexZero.AddDays(dateIndex);
         }
 
-        protected int DateIndexFromDateTime(DateTime date)
+        static public int DateIndexFromDateTime(DateTime date)
         {
-            return (int) DateIndexZero.Subtract(date).TotalDays;
+            return (int)date.Subtract(DateIndexZero).TotalDays;
         }
 
         internal async Task<IDocument> GetYearMonthDayDocument(SenateCalendarDateDTO dateDescriptor)
         {
-            var cacheId = GetCacheIdForDate(DateTimeFromDateIndex(dateDescriptor.UniqueDateIndex));
+            var dateAsDate = DateTimeFromDateIndex(dateDescriptor.UniqueDateIndex);
+            var cacheId = GetCacheIdForDate(dateAsDate);
             var doc = GetCached(cacheId);
-            if (doc!=null)
+            if (doc != null)
             {
                 return doc;
             }
             await GetLiveBaseDocument();
             SetLiveDateIndexAsync(dateDescriptor);
+            await SubmitLiveAspForm();
             SaveCached(cacheId);
             return LiveDocument;
         }
@@ -158,7 +160,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
             GetSelect(LiveDocument, "ctl00_B_Center_VoturiPlen1_drpYearCal").Value = year.ToString();
             SetLiveHtmlEvent("ctl00$B_Center$VoturiPlen1$drpYearCal", year.ToString());
 
-            await SubmitLiveMainForm();
+            await SubmitLiveAspForm();
             if (!IsDocumentValid())
             {
                 throw new NetworkFailureConnectionException("Failed switching to year " + year);
@@ -167,7 +169,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
             GetSelect(LiveDocument, "ctl00_B_Center_VoturiPlen1_drpMonthCal").Value = month.ToString();
             SetLiveHtmlEvent("ctl00$B_Center$VoturiPlen1$drpMonthCal", month.ToString());
 
-            await SubmitLiveMainForm();
+            await SubmitLiveAspForm();
             if (!IsDocumentValid())
             {
                 throw new NetworkFailureConnectionException("Failed switching to month " + year + "-" + month.ToString("D2"));
@@ -182,7 +184,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
         /// </summary>
         /// <returns></returns>
         /// <exception cref="UnexpectedPageContentException">Thrown by <see cref="SenateAspScraper.SetLiveHtmlEvent(string, string)"/> if the pagination element is not found.</exception>
-        /// <exception cref="NetworkFailureConnectionException">Thrown by <see cref="SenateAspScraper.SubmitLiveMainForm"/> if the live document is invalid.</exception>
+        /// <exception cref="NetworkFailureConnectionException">Thrown by <see cref="SenateAspScraper.SubmitLiveAspForm"/> if the live document is invalid.</exception>
         protected override async Task<IDocument> GetLiveBaseDocument()
         {
             if (LiveDocument != null)
@@ -198,7 +200,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
             GetInput(LiveDocument, "ctl00_B_Center_VoturiPlen1_chkPaginare").IsChecked = false;
             SetLiveHtmlEvent("ctl00$B_Center$VoturiPlen1$chkPaginare", "");
 
-            await SubmitLiveMainForm();
+            await SubmitLiveAspForm();
 
             LocalLogger.Trace("Finished generating the initial browser state");
             return SetLiveDocument(LiveDocument);
