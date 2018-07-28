@@ -90,6 +90,7 @@
     <Compile Include="SenateNetworkScraper.cs" />
     <Compile Include="SenateCalendarScraper.cs" />
     <Compile Include="SenateProcessor.cs" />
+    <Compile Include="SenateVoteSummaryDTO.cs" />
     <Compile Include="SummaryProcessor.cs" />
     <Compile Include="UnexpectedPageContentException.cs" />
   </ItemGroup>

@@ -24,6 +24,25 @@ namespace ro.stancescu.CDep.ScraperLibrary
     {
         private static readonly DateTime DateIndexZero = new DateTime(2000, 1, 1);
 
+        private const string TIME_REGEX_PATTERN = @"^(([1]?[0-9])|([2][0-3])):([0-5][0-9])$";
+        private static readonly Regex TimeRegex = new Regex(TIME_REGEX_PATTERN);
+
+        private const string NUMBER_REGEX_PATTERN = @"^[0-9]+$";
+        private static readonly Regex NumberRegex = new Regex(NUMBER_REGEX_PATTERN);
+
+        private static readonly List<string> VoteSummaryHeaderExpectedContents = new List<string>()
+        {
+            "Ora",
+            "Denumire",
+            "Descriere",
+            "Rezoluție",
+            "Prezenți",
+            "Pentru",
+            "Împotrivă",
+            "Abţineri",
+            "Nu au votat",
+        };
+
         // The first cyan dates show up in September 2005, but they're actually empty
         //public static readonly DateTime HistoryStart = new DateTime(2005, 9, 1);
 
@@ -60,9 +79,136 @@ namespace ro.stancescu.CDep.ScraperLibrary
             return LiveDocument;
         }
 
+        internal static IElement GetCalendarVoteTable(IDocument scraperDoc)
+        {
+            return scraperDoc.QuerySelector("#ctl00_B_Center_VoturiPlen1_GridVoturi");
+        }
+
         static public DateTime DateTimeFromDateIndex(int dateIndex)
         {
             return DateIndexZero.AddDays(dateIndex);
+        }
+
+        internal static List<SenateVoteSummaryDTO> GetVoteSummaries(DateTime voteDate, IHtmlTableElement htmlTableElement)
+        {
+            var tableRows = htmlTableElement.QuerySelectorAll("tr");
+            var header = tableRows[0];
+            var headerCells = header.QuerySelectorAll("th");
+            if (headerCells.Count() == 0)
+            {
+                throw new UnexpectedPageContentException("The vote summary must contain a header row!");
+            }
+
+            if (headerCells.Count() != VoteSummaryHeaderExpectedContents.Count)
+            {
+                throw new UnexpectedPageContentException("The vote summary header row contains an unexpected number of rows!");
+            }
+
+            for (var i = 0; i < VoteSummaryHeaderExpectedContents.Count; i++)
+            {
+                if (!VoteSummaryHeaderExpectedContents[i].Equals(headerCells[i].InnerHtml))
+                {
+                    throw new UnexpectedPageContentException("The vote summary header row contains «" + headerCells[i].InnerHtml + "» instead of the expected «" + VoteSummaryHeaderExpectedContents[i] + "»");
+                }
+            }
+
+            var voteSummaries = tableRows.Skip(1);
+            if (voteSummaries.Count() == 0)
+            {
+                throw new UnexpectedPageContentException("The vote summary table only contains the header row!");
+            }
+
+            var summary = new List<SenateVoteSummaryDTO>();
+            foreach (var voteSummary in voteSummaries)
+            {
+                var cellDTO = new SenateVoteSummaryDTO();
+                var cells = voteSummary.QuerySelectorAll("td");
+                if (cells.Count() != VoteSummaryHeaderExpectedContents.Count)
+                {
+                    throw new UnexpectedPageContentException("One of the summary table rows contains an unexpected number of columns! (" + cells.Count() + " instead of " + VoteSummaryHeaderExpectedContents.Count + ")");
+                }
+
+                #region Process the time of the vote
+                var timeMatch = TimeRegex.Match(cells[0].InnerHtml);
+                if (!timeMatch.Success)
+                {
+                    throw new UnexpectedPageContentException("The time is improperly formatted: " + cells[0].InnerHtml);
+                }
+
+                // This is safe, DateTime is a value type
+                cellDTO.VoteTime = voteDate
+                    .AddHours(int.Parse(timeMatch.Groups[1].Value))
+                    .AddMinutes(int.Parse(timeMatch.Groups[4].Value));
+                #endregion Process the time of the vote
+
+                #region Process the name and URI
+                var nameAnchor = cells[1].QuerySelector("a") as IHtmlAnchorElement;
+                if (nameAnchor == null)
+                {
+                    throw new UnexpectedPageContentException("There is no anchor in the name cell: «" + cells[1].InnerHtml + "»");
+                }
+                cellDTO.VoteName = nameAnchor.InnerText;
+                cellDTO.VoteNameUri = nameAnchor.Href; // may be null
+                #endregion Process the name and URI
+
+                #region Process the description and URI
+                var descriptionAnchor = cells[2].QuerySelector("a") as IHtmlAnchorElement;
+                if (descriptionAnchor == null)
+                {
+                    throw new UnexpectedPageContentException("There is no anchor in the description cell: «" + cells[2].InnerHtml + "»");
+                }
+                cellDTO.VoteDescription = descriptionAnchor.InnerText;
+                cellDTO.VoteDescriptionUri = descriptionAnchor.Href; // may be null
+                #endregion Process the description and URI
+
+                #region Process the vote resolution
+                switch (cells[3].InnerHtml)
+                {
+                    case "":
+                    case "&nbsp;":
+                        cellDTO.VoteResolution = SenateVoteSummaryDTO.VoteResolutions.UnknownVoteResolution;
+                        break;
+                    case "Adoptat":
+                    case "Aprobat":
+                        cellDTO.VoteResolution = SenateVoteSummaryDTO.VoteResolutions.Accepted;
+                        break;
+                    case "Respins":
+                        cellDTO.VoteResolution = SenateVoteSummaryDTO.VoteResolutions.Rejected;
+                        break;
+                    default:
+                        throw new UnexpectedPageContentException("Unknown vote resolution: «" + cells[3].InnerHtml + "»");
+                }
+                #endregion Process the vote resolution
+
+                if (!int.TryParse(cells[4].InnerHtml, out cellDTO.CountPresent))
+                {
+                    throw new UnexpectedPageContentException("The number of present senators couldn't be parsed: " + cells[4].InnerHtml);
+                }
+
+                if (!int.TryParse(cells[5].InnerHtml, out cellDTO.CountFor))
+                {
+                    throw new UnexpectedPageContentException("The number of senators who voted yay couldn't be parsed: " + cells[5].InnerHtml);
+                }
+
+                if (!int.TryParse(cells[6].InnerHtml, out cellDTO.CountAgainst))
+                {
+                    throw new UnexpectedPageContentException("The number of senators who voted nay couldn't be parsed: " + cells[6].InnerHtml);
+                }
+
+                if (!int.TryParse(cells[7].InnerHtml, out cellDTO.CountAbstained))
+                {
+                    throw new UnexpectedPageContentException("The number of senators who abstained couldn't be parsed: " + cells[7].InnerHtml);
+                }
+
+                if (!int.TryParse(cells[8].InnerHtml, out cellDTO.CountNotVoted))
+                {
+                    throw new UnexpectedPageContentException("The number of senators who haven't voted couldn't be parsed: " + cells[8].InnerHtml);
+                }
+
+                summary.Add(cellDTO);
+            }
+
+            return summary;
         }
 
         static public int DateIndexFromDateTime(DateTime date)
