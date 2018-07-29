@@ -45,12 +45,6 @@ namespace ro.stancescu.CDep.ScraperLibrary
         }
 
         /// <summary>
-        /// The base URL for all descendants.
-        /// </summary>
-        /// <returns></returns>
-        protected abstract string GetBaseUrl();
-
-        /// <summary>
         /// Unconditionally returns <paramref name="document"/> (NOT <see cref="liveDocument"/>!).
         /// Also sets <see cref="liveDocument"/> if <paramref name="document"/> is valid, as defined by <see cref="IsDocumentValid(IDocument)"/>.
         /// </summary>

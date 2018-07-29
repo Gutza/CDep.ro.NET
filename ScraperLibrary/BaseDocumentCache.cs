@@ -42,18 +42,24 @@ namespace ro.stancescu.CDep.ScraperLibrary
         internal CacheModes CacheMode = CacheModes.Normal;
 
         private SHA256 ShaGenerator = null;
-        private HtmlParser Parser = null;
 
         public abstract string GetCurrentHtml();
 
-        protected IDocument GetCached(string cacheId)
+        /// <summary>
+        /// The base URL for all descendants.
+        /// </summary>
+        /// <returns></returns>
+        protected abstract string GetBaseUrl();
+
+
+        protected async Task<IDocument> GetCached(string cacheId)
         {
             if (!CacheDict[CacheMode].HasFlag(CacheTypes.Readable))
             {
                 return null;
             }
 
-            IDocument result = null;
+            IDocument document = null;
             using (var source = GetCacheReadStream(cacheId))
             {
                 if (source == null)
@@ -61,14 +67,12 @@ namespace ro.stancescu.CDep.ScraperLibrary
                     return null;
                 }
 
-                if (Parser == null)
-                {
-                    Parser = new HtmlParser(Configuration.Default.WithCss());
-                }
-                result = Parser.Parse(source);
+                var context = BrowsingContext.New(Configuration.Default.WithCss());
+                document = await context.OpenAsync(res => res.Content(source).Address(GetBaseUrl()));
+
                 source.Close();
             }
-            return result;
+            return document;
         }
 
         protected async void SaveCached(string cacheId)

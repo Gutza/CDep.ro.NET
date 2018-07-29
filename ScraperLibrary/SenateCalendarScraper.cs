@@ -59,7 +59,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
         internal async Task<IDocument> GetYearMonthDocument(int year, int month)
         {
             var cacheId = GetCacheIdForDate(new DateTime(year, month, 1));
-            var doc = GetCached(cacheId);
+            var doc = await GetCached(cacheId);
             if (doc != null)
             {
                 return doc;
@@ -215,7 +215,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
         {
             var dateAsDate = DateTimeFromDateIndex(dateDescriptor.UniqueDateIndex);
             var cacheId = GetCacheIdForDate(dateAsDate);
-            var doc = GetCached(cacheId);
+            var doc = await GetCached(cacheId);
             if (doc != null)
             {
                 return doc;
