@@ -124,8 +124,11 @@ namespace ro.stancescu.CDep.ScraperLibrary
                 GetCacheFolder(),
             };
 
+            // Two levels of folders, each with a max of 256 subfolders, produce 65,536 distinct containers.
+            // Assuming we allow for a maximum of 1,000 files per folder, we can accommodate 65,000,000 files.
+            // That should be enough for the purpose of this project.
             var shaId = ShaGenerator.ComputeHash(Encoding.UTF8.GetBytes(cacheId));
-            for (var i = 0; i < 3; i++)
+            for (var i = 0; i < 2; i++) 
             {
                 pathList.Add(shaId[i].ToString("X2"));
             }
