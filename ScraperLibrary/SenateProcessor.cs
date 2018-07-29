@@ -29,6 +29,11 @@ namespace ro.stancescu.CDep.ScraperLibrary
                 Console.WriteLine("Processing month " + scraperMonthYear.ToShortDateString());
                 var scraperDoc = await calendarScraper.GetYearMonthDocument(scraperMonthYear.Year, scraperMonthYear.Month);
                 var scraperMonthDates = calendarScraper.GetValidDates(scraperDoc);
+                if (scraperMonthDates.Count == 0)
+                {
+                    Console.WriteLine("There are no dates to scrape in month " + scraperMonthYear.ToShortDateString());
+                }
+
                 foreach (var scraperDate in scraperMonthDates)
                 {
                     var currentDate = SenateCalendarScraper.DateTimeFromDateIndex(scraperDate.UniqueDateIndex);
@@ -41,29 +46,53 @@ namespace ro.stancescu.CDep.ScraperLibrary
                         continue;
                     }
 
-                    ProcessCalendarVoteTable(currentDate, mainTable as IHtmlTableElement);
+                    var voteSummaries = ProcessCalendarVoteTable(currentDate, mainTable as IHtmlTableElement);
+                    if (voteSummaries.Count == 0)
+                    {
+                        Console.WriteLine("There are no vote summaries for date " + currentDate.ToShortDateString());
+                    }
+
+                    foreach (var summary in voteSummaries)
+                    {
+                        if (!string.IsNullOrEmpty(summary.VoteNameUri))
+                        {
+                            Console.WriteLine("Processing vote name page in date " + currentDate.ToShortDateString() + " with url «" + summary.VoteNameUri + "»");
+                            var scraper = new SenateGenericScraper(summary.VoteNameUri);
+                            var doc = await scraper.GetDocument();
+                        }
+
+                        if (!string.IsNullOrEmpty(summary.VoteDescriptionUri))
+                        {
+                            Console.WriteLine("Processing vote description page in date " + currentDate.ToShortDateString() + " with url «" + summary.VoteDescriptionUri + "»");
+                            var scraper = new SenateGenericScraper(summary.VoteDescriptionUri);
+                            var doc = await scraper.GetDocument();
+                        }
+                    }
+
                 }
                 scraperMonthYear = scraperMonthYear.AddMonths(1);
             }
             Console.WriteLine("Finished processing the Senate data.");
         }
 
-        private void ProcessCalendarVoteTable(DateTime currentDate, IHtmlTableElement htmlTableElement)
+        private List<SenateVoteSummaryDTO> ProcessCalendarVoteTable(DateTime currentDate, IHtmlTableElement htmlTableElement)
         {
             if (htmlTableElement == null)
             {
                 LogManager.GetCurrentClassLogger().Error("The main table element is not a TABLE element for date " + currentDate.ToShortDateString() + "!");
-                return;
+                return new List<SenateVoteSummaryDTO>();
             }
 
             try
             {
-                var voteSummaries = SenateCalendarScraper.GetVoteSummaries(currentDate, htmlTableElement);
+                return SenateCalendarScraper.GetVoteSummaries(currentDate, htmlTableElement);
             }
             catch (UnexpectedPageContentException ex)
             {
                 LogManager.GetCurrentClassLogger().Error("Unexpected content in the vote summary document for date " + currentDate.ToShortDateString() + ": " + ex.Message);
+                return new List<SenateVoteSummaryDTO>();
             }
+
         }
     }
 }
