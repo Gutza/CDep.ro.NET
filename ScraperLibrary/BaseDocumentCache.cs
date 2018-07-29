@@ -17,24 +17,26 @@ namespace ro.stancescu.CDep.ScraperLibrary
         Normal,
         ReadOnly,
         WriteOnly,
+        Disabled,
     }
 
     public abstract class BaseDocumentCache
     {
         [Flags]
-        private enum  CacheTypes
+        private enum CacheTypes
         {
-            InvalidCacheType = 0,
+            Neither = 0,
             Readable,
             Writable,
         }
 
         private Dictionary<CacheModes, CacheTypes> CacheDict = new Dictionary<CacheModes, CacheTypes>()
         {
-            { CacheModes.InvalidCacheMode, CacheTypes.InvalidCacheType },
+            { CacheModes.InvalidCacheMode, CacheTypes.Neither },
             { CacheModes.ReadOnly, CacheTypes.Readable },
             { CacheModes.WriteOnly, CacheTypes.Writable },
             { CacheModes.Normal, CacheTypes.Readable | CacheTypes.Writable },
+            { CacheModes.Disabled, CacheTypes.Neither },
         };
 
         internal CacheModes CacheMode = CacheModes.Normal;
