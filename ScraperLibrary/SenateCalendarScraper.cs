@@ -66,16 +66,11 @@ namespace ro.stancescu.CDep.ScraperLibrary
             }
 
             await GetLiveBaseDocument();
-            if (!IsDocumentValid())
-            {
-                throw new NetworkFailureConnectionException("Failed retrieving the live document!");
-            }
+
             await SetLiveMonthIndex(year, month);
-            if (!IsDocumentValid())
-            {
-                throw new NetworkFailureConnectionException("Failed setting the year/month to " + year + "-" + month.ToString("D2"));
-            }
+
             SaveCached(cacheId);
+
             return LiveDocument;
         }
 
@@ -295,7 +290,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
         /// <summary>
         /// Sets the year and month index for the <see cref="SenateAspScraper.liveDocument"/>.
-        /// Always works on the live document.
+        /// Always works on the live document. Guaranteed to return a valid document.
         /// </summary>
         /// <param name="document"></param>
         /// <param name="year"></param>
@@ -307,26 +302,18 @@ namespace ro.stancescu.CDep.ScraperLibrary
             SetLiveHtmlEvent("ctl00$B_Center$VoturiPlen1$drpYearCal", year.ToString());
 
             await SubmitLiveAspForm();
-            if (!IsDocumentValid())
-            {
-                throw new NetworkFailureConnectionException("Failed switching to year " + year);
-            }
 
             GetSelect(LiveDocument, "ctl00_B_Center_VoturiPlen1_drpMonthCal").Value = month.ToString();
             SetLiveHtmlEvent("ctl00$B_Center$VoturiPlen1$drpMonthCal", month.ToString());
 
             await SubmitLiveAspForm();
-            if (!IsDocumentValid())
-            {
-                throw new NetworkFailureConnectionException("Failed switching to month " + year + "-" + month.ToString("D2"));
-            }
 
             return LiveDocument;
         }
 
         /// <summary>
         /// Retrieves the initial document state for the calendar scraper.
-        /// Always works on the live document.
+        /// Always works on the live document. Guaranteed to return a valid document.
         /// </summary>
         /// <returns></returns>
         /// <exception cref="UnexpectedPageContentException">Thrown by <see cref="SenateAspScraper.SetLiveHtmlEvent(string, string)"/> if the pagination element is not found.</exception>

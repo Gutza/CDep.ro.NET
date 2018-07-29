@@ -83,10 +83,8 @@ namespace ro.stancescu.CDep.ScraperLibrary
             var requester = new HttpRequester();
             requester.Headers["User-Agent"] = "Mozilla";
 
-            // Setup the configuration to support document loading
             var config = Configuration.Default.WithDefaultLoader(requesters: new[] { requester }).WithCss();
 
-            // Load the names of all The Big Bang Theory episodes from Wikipedia
             var address = GetBaseUrl();
 
             // Asynchronously get the document in a new context using the configuration
