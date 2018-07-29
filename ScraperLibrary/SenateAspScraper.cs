@@ -42,23 +42,6 @@ namespace ro.stancescu.CDep.ScraperLibrary
         }
 
         /// <summary>
-        /// Unconditionally returns <paramref name="document"/> (NOT <see cref="liveDocument"/>!).
-        /// Also sets <see cref="liveDocument"/> if <paramref name="document"/> is valid, as defined by <see cref="IsDocumentValid(IDocument)"/>.
-        /// </summary>
-        /// <param name="document">Typically the most recent document resulted from an HTTP request.</param>
-        /// <returns>Always <paramref name="document"/>.</returns>
-        protected IDocument SetLiveDocument(IDocument document)
-        {
-            if (!IsDocumentValid(document))
-            {
-                return document;
-            }
-
-            LiveDocument = document;
-            return LiveDocument;
-        }
-
-        /// <summary>
         /// Always works on the <see cref="liveDocument"/>;
         /// sets the silly ASP.Net __EVENTTARGET and __EVENTARGUMENT
         /// to the given values.

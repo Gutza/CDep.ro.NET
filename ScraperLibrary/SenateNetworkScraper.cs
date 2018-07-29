@@ -51,6 +51,23 @@ namespace ro.stancescu.CDep.ScraperLibrary
         protected abstract string GetBaseUrl();
 
         /// <summary>
+        /// Unconditionally returns <paramref name="document"/> (NOT <see cref="liveDocument"/>!).
+        /// Also sets <see cref="liveDocument"/> if <paramref name="document"/> is valid, as defined by <see cref="IsDocumentValid(IDocument)"/>.
+        /// </summary>
+        /// <param name="document">Typically the most recent document resulted from an HTTP request.</param>
+        /// <returns>Always <paramref name="document"/>.</returns>
+        protected IDocument SetLiveDocument(IDocument document)
+        {
+            if (!IsDocumentValid(document))
+            {
+                return document;
+            }
+
+            LiveDocument = document;
+            return LiveDocument;
+        }
+
+        /// <summary>
         /// Retrieves the initial document for all descendants from the URL at <see cref="GetBaseUrl"/>.
         /// Guaranteed to return a valid document.
         /// </summary>
@@ -87,8 +104,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
                 throw new NetworkFailureConnectionException("Failed retrieving the base document from " + address + "!");
             }
 
-            LiveDocument = newDocument;
-            return newDocument;
+            return SetLiveDocument(newDocument);
         }
 
         /// <summary>
