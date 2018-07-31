@@ -6,6 +6,15 @@ using System.Threading.Tasks;
 
 namespace ro.stancescu.CDep.BusinessEntities
 {
+    /// <summary>
+    /// The database entity which represents a vote summary.
+    /// </summary>
+    /// <remarks>
+    /// Each vote summary represents a single plenary vote in a <see cref="ParliamentaryDayDBE"/>,
+    /// on a single matter, at a single point in time.
+    /// Vote summaries can be broken down into individual <see cref="VoteDetailDBE"/> entities,
+    /// each of which represents a single vote by an <see cref="MPDBE"/>.
+    /// </remarks>
     public class VoteSummaryDBE
     {
         public virtual int? Id { get; set; }
