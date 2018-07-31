@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace ro.stancescu.CDep.ScraperLibrary
 {
-    public abstract class SenateAspScraper: SenateNetworkScraper
+    public abstract class GenericAspScraper: BaseAngleSharpScraper
     {
         /// <summary>
         /// Submits the ASP.Net form in the <see cref="liveDocument"/>.

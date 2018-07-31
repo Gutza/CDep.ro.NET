@@ -57,14 +57,14 @@ namespace ro.stancescu.CDep.ScraperLibrary
                         if (!string.IsNullOrEmpty(summary.VoteNameUri))
                         {
                             Console.WriteLine("Processing vote name page in date " + currentDate.ToShortDateString() + " with url «" + summary.VoteNameUri + "»");
-                            var scraper = new SenateGenericScraper(summary.VoteNameUri);
+                            var scraper = new GenericHtmlScraper(summary.VoteNameUri);
                             var doc = await scraper.GetDocument();
                         }
 
                         if (!string.IsNullOrEmpty(summary.VoteDescriptionUri))
                         {
                             Console.WriteLine("Processing vote description page in date " + currentDate.ToShortDateString() + " with url «" + summary.VoteDescriptionUri + "»");
-                            var scraper = new SenateGenericScraper(summary.VoteDescriptionUri);
+                            var scraper = new GenericHtmlScraper(summary.VoteDescriptionUri);
                             var doc = await scraper.GetDocument();
                         }
                     }

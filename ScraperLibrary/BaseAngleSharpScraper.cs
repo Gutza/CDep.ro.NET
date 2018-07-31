@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace ro.stancescu.CDep.ScraperLibrary
 {
-    public abstract class SenateNetworkScraper : BaseDocumentCache
+    public abstract class BaseAngleSharpScraper : BaseDocumentCache
     {
         /// <summary>
         /// The local <see cref="Logger"/>.

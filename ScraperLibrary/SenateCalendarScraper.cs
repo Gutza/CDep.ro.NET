@@ -20,7 +20,7 @@ using AngleSharp.Extensions;
 
 namespace ro.stancescu.CDep.ScraperLibrary
 {
-    internal class SenateCalendarScraper : SenateAspScraper
+    internal class SenateCalendarScraper : GenericAspScraper
     {
         private static readonly DateTime DateIndexZero = new DateTime(2000, 1, 1);
 
@@ -289,7 +289,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
         }
 
         /// <summary>
-        /// Sets the year and month index for the <see cref="SenateAspScraper.liveDocument"/>.
+        /// Sets the year and month index for the <see cref="GenericAspScraper.liveDocument"/>.
         /// Always works on the live document. Guaranteed to return a valid document.
         /// </summary>
         /// <param name="document"></param>
@@ -316,8 +316,8 @@ namespace ro.stancescu.CDep.ScraperLibrary
         /// Always works on the live document. Guaranteed to return a valid document.
         /// </summary>
         /// <returns></returns>
-        /// <exception cref="UnexpectedPageContentException">Thrown by <see cref="SenateAspScraper.SetLiveHtmlEvent(string, string)"/> if the pagination element is not found.</exception>
-        /// <exception cref="NetworkFailureConnectionException">Thrown by <see cref="SenateAspScraper.SubmitLiveAspForm"/> if the live document is invalid.</exception>
+        /// <exception cref="UnexpectedPageContentException">Thrown by <see cref="GenericAspScraper.SetLiveHtmlEvent(string, string)"/> if the pagination element is not found.</exception>
+        /// <exception cref="NetworkFailureConnectionException">Thrown by <see cref="GenericAspScraper.SubmitLiveAspForm"/> if the live document is invalid.</exception>
         protected override async Task<IDocument> GetLiveBaseDocument()
         {
             if (LiveDocument != null)

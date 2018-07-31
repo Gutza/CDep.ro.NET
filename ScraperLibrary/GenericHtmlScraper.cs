@@ -7,11 +7,11 @@ using System.Threading.Tasks;
 
 namespace ro.stancescu.CDep.ScraperLibrary
 {
-    internal class SenateGenericScraper : SenateNetworkScraper
+    internal class GenericHtmlScraper : BaseAngleSharpScraper
     {
         internal string Url { get; private set; }
 
-        internal SenateGenericScraper(string url)
+        internal GenericHtmlScraper(string url)
         {
             Url = url;
         }
