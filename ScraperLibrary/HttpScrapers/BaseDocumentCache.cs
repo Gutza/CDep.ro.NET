@@ -37,7 +37,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
             Writable,
         }
 
-        private Dictionary<CacheModes, CacheTypes> CacheDict = new Dictionary<CacheModes, CacheTypes>()
+        private readonly Dictionary<CacheModes, CacheTypes> CacheDict = new Dictionary<CacheModes, CacheTypes>()
         {
             { CacheModes.InvalidCacheMode, CacheTypes.Neither },
             { CacheModes.ReadOnly, CacheTypes.Readable },
@@ -50,7 +50,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
         private SHA256 ShaGenerator = null;
 
-        public abstract string GetCurrentHtml();
+        public abstract string GetCurrentWebContent();
 
         /// <summary>
         /// The base URL for all descendants.
@@ -59,27 +59,20 @@ namespace ro.stancescu.CDep.ScraperLibrary
         protected abstract string GetBaseUrl();
 
 
-        protected async Task<IDocument> GetCachedByKey(string cacheId)
+        protected Stream GetCachedByKey(string cacheId)
         {
             if (!CacheDict[CacheMode].HasFlag(CacheTypes.Readable))
             {
                 return null;
             }
 
-            IDocument document = null;
-            using (var source = GetCacheReadStream(cacheId))
+            var path = Path.Combine(GetCachePathList(cacheId).ToArray());
+            if (!File.Exists(path))
             {
-                if (source == null)
-                {
-                    return null;
-                }
-
-                var context = BrowsingContext.New(Configuration.Default.WithCss());
-                document = await context.OpenAsync(res => res.Content(source).Address(GetBaseUrl()));
-
-                source.Close();
+                return null;
             }
-            return document;
+
+            return new FileStream(path, FileMode.Open);
         }
 
         protected async Task SaveCachedByKey(string cacheId)
@@ -102,15 +95,15 @@ namespace ro.stancescu.CDep.ScraperLibrary
             using (var fp = File.OpenWrite(filePath))
             {
                 fp.SetLength(0); // Remove the old cache content, if any
-                var stringBuffer = Encoding.UTF8.GetBytes(GetCurrentHtml());
+                var stringBuffer = Encoding.UTF8.GetBytes(GetCurrentWebContent());
                 await fp.WriteAsync(stringBuffer, 0, stringBuffer.Length);
                 fp.Close();
             }
         }
 
-        protected async Task<IDocument> GetCachedByUrl(string url)
+        protected Stream GetCachedByUrl(string url)
         {
-            return await GetCachedByKey(ResolveUrlToCacheKey(url));
+            return GetCachedByKey(ResolveUrlToCacheKey(url));
         }
 
         protected async Task SaveCachedByUrl(string url)
@@ -130,17 +123,6 @@ namespace ro.stancescu.CDep.ScraperLibrary
             return cacheId;
         }
 
-        private FileStream GetCacheReadStream(string cacheId)
-        {
-            var path = Path.Combine(GetCachePathList(cacheId).ToArray());
-            if (!File.Exists(path))
-            {
-                return null;
-            }
-
-            return new FileStream(path, FileMode.Open);
-        }
-
         private List<string> GetCachePathList(string cacheId)
         {
             if (ShaGenerator == null)
@@ -157,7 +139,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
             // Assuming we allow for a maximum of 1,000 files per folder, we can accommodate 65,000,000 files.
             // That should be enough for the purpose of this project.
             var shaId = ShaGenerator.ComputeHash(Encoding.UTF8.GetBytes(cacheId));
-            for (var i = 0; i < 2; i++) 
+            for (var i = 0; i < 2; i++)
             {
                 pathList.Add(shaId[i].ToString("X2"));
             }

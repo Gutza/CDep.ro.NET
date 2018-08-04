@@ -5,6 +5,7 @@ using AngleSharp.Network.Default;
 using NLog;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -102,9 +103,15 @@ namespace ro.stancescu.CDep.ScraperLibrary
                 document.Body.ChildElementCount > 0;
         }
 
-        public override string GetCurrentHtml()
+        public override string GetCurrentWebContent()
         {
             return LiveDocument.ToHtml();
+        }
+
+        protected async Task<IDocument> GetDocumentFromStream(Stream stream)
+        {
+            var context = BrowsingContext.New(Configuration.Default.WithCss());
+            return await context.OpenAsync(res => res.Content(stream, false).Address(GetBaseUrl()));
         }
     }
 }

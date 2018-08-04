@@ -1,4 +1,5 @@
-﻿using AngleSharp.Dom;
+﻿using AngleSharp;
+using AngleSharp.Dom;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,10 +24,14 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
         internal async Task<IDocument> GetDocument()
         {
-            var doc = await GetCachedByUrl(Url);
-            if (doc != null)
+            using (var stream = GetCachedByUrl(Url))
             {
-                return doc;
+                if (stream != null)
+                {
+                    var document = await GetDocumentFromStream(stream);
+                    stream.Close();
+                    return document;
+                }
             }
 
             var result = await GetLiveBaseDocument();

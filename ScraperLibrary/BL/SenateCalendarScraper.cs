@@ -59,17 +59,17 @@ namespace ro.stancescu.CDep.ScraperLibrary
         internal async Task<IDocument> GetYearMonthDocument(int year, int month)
         {
             var cacheId = GetCacheIdForDate(new DateTime(year, month, 1));
-            var doc = await GetCachedByKey(cacheId);
-            if (doc != null)
+            var stream = GetCachedByKey(cacheId);
+            if (stream != null)
             {
-                return doc;
+                return await GetDocumentFromStream(stream);
             }
 
             await GetLiveBaseDocument();
 
             await SetLiveMonthIndex(year, month);
 
-            SaveCachedByKey(cacheId);
+            await SaveCachedByKey(cacheId);
 
             return LiveDocument;
         }
@@ -215,15 +215,15 @@ namespace ro.stancescu.CDep.ScraperLibrary
         {
             var dateAsDate = DateTimeFromDateIndex(dateDescriptor.UniqueDateIndex);
             var cacheId = GetCacheIdForDate(dateAsDate);
-            var doc = await GetCachedByKey(cacheId);
-            if (doc != null)
+            var stream = GetCachedByKey(cacheId);
+            if (stream != null)
             {
-                return doc;
+                return await GetDocumentFromStream(stream);
             }
             await GetLiveBaseDocument();
             SetLiveDateIndexAsync(dateDescriptor);
             await SubmitLiveAspForm();
-            SaveCachedByKey(cacheId);
+            await SaveCachedByKey(cacheId);
             return LiveDocument;
         }
 
@@ -272,8 +272,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
                     continue;
                 }
 
-                int dateIndex;
-                if (!int.TryParse(match.Groups[1].Value, out dateIndex))
+                if (!int.TryParse(match.Groups[1].Value, out int dateIndex))
                 {
                     throw new UnexpectedPageContentException("The date index is not an integer while attempting to retrieve the valid dates! Value = " + match.Groups[1].Value);
                 }
