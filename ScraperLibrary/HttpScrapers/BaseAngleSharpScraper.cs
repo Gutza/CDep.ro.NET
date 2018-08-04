@@ -16,12 +16,6 @@ namespace ro.stancescu.CDep.ScraperLibrary
     public abstract class BaseAngleSharpScraper : BaseDocumentCache
     {
         /// <summary>
-        /// The number of network retries.
-        /// Should be obeyed by all descendants.
-        /// </summary>
-        protected const int RETRY_COUNT = 3;
-
-        /// <summary>
         /// The current live document entity.
         /// Must be used by all methods which actually need to
         /// actually access the network.
@@ -51,7 +45,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
         /// </summary>
         /// <returns></returns>
         /// <exception cref="NetworkFailureConnectionException">Thrown if the resulting document is invalid.</exception>
-        protected virtual async Task<IDocument> GetLiveBaseDocument()
+        protected virtual IDocument GetLiveBaseDocument()
         {
             if (LiveDocument != null)
             {
@@ -65,14 +59,13 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
             var address = GetBaseUrl();
 
-            // Asynchronously get the document in a new context using the configuration
-            var newDocument = await BrowsingContext.New(config).OpenAsync(address);
+            var newDocument = Task.Run(() => BrowsingContext.New(config).OpenAsync(address)).Result;
 
             bool valid;
             for (var i = 0; !(valid = IsDocumentValid(newDocument)) && i < RETRY_COUNT; i++)
             {
                 LocalLogger.Warn("Failed retrieving the initial browser (attempt " + (i + 1) + "/" + RETRY_COUNT + ")");
-                newDocument = await BrowsingContext.New(config).OpenAsync(address);
+                newDocument = Task.Run(() => BrowsingContext.New(config).OpenAsync(address)).Result;
             }
 
             if (!valid)
@@ -108,10 +101,10 @@ namespace ro.stancescu.CDep.ScraperLibrary
             return LiveDocument.ToHtml();
         }
 
-        protected async Task<IDocument> GetDocumentFromStream(Stream stream)
+        protected IDocument GetDocumentFromStream(Stream stream)
         {
             var context = BrowsingContext.New(Configuration.Default.WithCss());
-            return await context.OpenAsync(res => res.Content(stream, false).Address(GetBaseUrl()));
+            return Task.Run(() => context.OpenAsync(res => res.Content(stream, false).Address(GetBaseUrl()))).Result;
         }
     }
 }

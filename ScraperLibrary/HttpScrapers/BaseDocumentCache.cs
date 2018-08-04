@@ -24,6 +24,12 @@ namespace ro.stancescu.CDep.ScraperLibrary
     public abstract class BaseDocumentCache
     {
         /// <summary>
+        /// The number of network retries.
+        /// Should be obeyed by all descendants.
+        /// </summary>
+        protected const int RETRY_COUNT = 3;
+
+        /// <summary>
         /// The local <see cref="Logger"/>.
         /// Guaranteeed to be set in all descendants.
         /// </summary>
@@ -75,7 +81,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
             return new FileStream(path, FileMode.Open);
         }
 
-        protected async Task SaveCachedByKey(string cacheId)
+        protected void SaveCachedByKey(string cacheId)
         {
             if (!CacheDict[CacheMode].HasFlag(CacheTypes.Writable))
             {
@@ -96,7 +102,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
             {
                 fp.SetLength(0); // Remove the old cache content, if any
                 var stringBuffer = Encoding.UTF8.GetBytes(GetCurrentWebContent());
-                await fp.WriteAsync(stringBuffer, 0, stringBuffer.Length);
+                fp.Write(stringBuffer, 0, stringBuffer.Length);
                 fp.Close();
             }
         }
@@ -106,9 +112,9 @@ namespace ro.stancescu.CDep.ScraperLibrary
             return GetCachedByKey(ResolveUrlToCacheKey(url));
         }
 
-        protected async Task SaveCachedByUrl(string url)
+        protected void SaveCachedByUrl(string url)
         {
-            await SaveCachedByKey(ResolveUrlToCacheKey(url));
+            SaveCachedByKey(ResolveUrlToCacheKey(url));
         }
 
         protected string ResolveUrlToCacheKey(string url)

@@ -21,15 +21,15 @@ namespace ro.stancescu.CDep.ScraperLibrary
         /// </summary>
         /// <returns></returns>
         /// <exception cref="NetworkFailureConnectionException">Thrown when the result is not a valid document.</exception>
-        protected async Task<IDocument> SubmitLiveAspForm()
+        protected IDocument SubmitLiveAspForm()
         {
-            var newDoc = await ((IHtmlFormElement)LiveDocument.QuerySelector("#aspnetForm")).SubmitAsync();
+            var newDoc = Task.Run(() => ((IHtmlFormElement)LiveDocument.QuerySelector("#aspnetForm")).SubmitAsync()).Result;
 
             bool valid;
             for (var i = 0; !(valid=IsDocumentValid(newDoc)) && i < RETRY_COUNT; i++)
             {
                 LocalLogger.Warn("Failed submitting the main ASP.Net form (attempt " + (i + 1) + "/" + RETRY_COUNT + ")");
-                newDoc = await ((IHtmlFormElement)LiveDocument.QuerySelector("#aspnetForm")).SubmitAsync();
+                newDoc = Task.Run(() => ((IHtmlFormElement)LiveDocument.QuerySelector("#aspnetForm")).SubmitAsync()).Result;
             }
 
             if (!valid)

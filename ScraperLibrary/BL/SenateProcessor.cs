@@ -11,7 +11,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
 {
     public class SenateProcessor
     {
-        public async void Execute()
+        public void Execute()
         {
             var calendarScraper = new SenateCalendarScraper();
 
@@ -26,7 +26,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
             )
             {
                 Console.WriteLine("Processing month " + scraperMonthYear.ToShortDateString());
-                var scraperDoc = await calendarScraper.GetYearMonthDocument(scraperMonthYear.Year, scraperMonthYear.Month);
+                var scraperDoc = calendarScraper.GetYearMonthDocument(scraperMonthYear.Year, scraperMonthYear.Month);
                 var scraperMonthDates = calendarScraper.GetValidDates(scraperDoc);
                 if (scraperMonthDates.Count == 0)
                 {
@@ -37,7 +37,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
                 {
                     var currentDate = SenateCalendarScraper.DateTimeFromDateIndex(scraperDate.UniqueDateIndex);
                     Console.WriteLine("Processing date " + currentDate.ToShortDateString() + " (index " + scraperDate.UniqueDateIndex + ")");
-                    scraperDoc = await calendarScraper.GetYearMonthDayDocument(scraperDate);
+                    scraperDoc = calendarScraper.GetYearMonthDayDocument(scraperDate);
                     var mainTable = SenateCalendarScraper.GetCalendarVoteTable(scraperDoc);
                     if (mainTable == null)
                     {
@@ -57,14 +57,14 @@ namespace ro.stancescu.CDep.ScraperLibrary
                         {
                             Console.WriteLine("Processing vote name page in date " + currentDate.ToShortDateString() + " with url «" + summary.VoteNameUri + "»");
                             var scraper = new GenericHtmlScraper(summary.VoteNameUri);
-                            var doc = await scraper.GetDocument();
+                            var doc = scraper.GetDocument();
                         }
 
                         if (!string.IsNullOrEmpty(summary.VoteDescriptionUri))
                         {
                             Console.WriteLine("Processing vote description page in date " + currentDate.ToShortDateString() + " with url «" + summary.VoteDescriptionUri + "»");
                             var scraper = new GenericHtmlScraper(summary.VoteDescriptionUri);
-                            var doc = await scraper.GetDocument();
+                            var doc = scraper.GetDocument();
                         }
                     }
 

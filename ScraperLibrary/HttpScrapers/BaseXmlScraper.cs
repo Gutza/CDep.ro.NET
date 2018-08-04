@@ -9,10 +9,9 @@ using System.Xml.Serialization;
 
 namespace ro.stancescu.CDep.ScraperLibrary
 {
-    public abstract class BaseXmlScraper<T> : BaseDocumentCache
+    public class BaseXmlScraper<T> : BaseDocumentCache
     {
         internal string Url { get; private set; }
-        static WebClient web = null;
         string CurrentXmlString = null;
 
         internal BaseXmlScraper(string url)
@@ -32,29 +31,52 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
         internal T GetDocument()
         {
-            var stream = GetCachedByUrl(Url);
-            if (stream != null)
+            using (var stream = GetCachedByUrl(Url))
             {
-                return DocFromStream(stream);
-            }
-
-            if (web == null)
-            {
-                web = new WebClient();
-            }
-            var webStream = web.OpenRead(Url);
-
-            using (var summaryReader = new StreamReader(webStream, Encoding.GetEncoding("ISO-8859-2")))
-            {
-                if (summaryReader.EndOfStream)
+                if (stream != null)
                 {
-                    return default(T);
+                    try
+                    {
+                        return DocFromStream(stream);
+                    }
+                    catch
+                    {
+                        LocalLogger.Error("Error in cache for URL " + Url);
+                        // Simply not returning means we go on and retry downloading the file
+                    }
+                }
+            }
+
+            T result = default(T);
+
+            for (int i = 0; i < RETRY_COUNT; i++)
+            {
+                var webStream = new WebClient().OpenRead(Url);
+                using (var summaryReader = new StreamReader(webStream, Encoding.GetEncoding("ISO-8859-2")))
+                {
+                    if (summaryReader.EndOfStream)
+                    {
+                        return default(T);
+                    }
+
+                    CurrentXmlString = summaryReader.ReadToEnd();
                 }
 
-                CurrentXmlString = summaryReader.ReadToEnd();
+                try
+                {
+                    result = DocFromStream(new StringReader(CurrentXmlString));
+                }
+                catch
+                {
+                    LocalLogger.Warn("Failed parsing XML file from URL " + Url + " (attempt " + i + "/" + RETRY_COUNT + ")");
+                    continue;
+                }
+
+                SaveCachedByUrl(Url);
+                break;
             }
 
-            return DocFromStream(new StringReader(CurrentXmlString));
+            return result;
         }
 
         private T DocFromStream(TextReader stream)

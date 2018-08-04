@@ -22,21 +22,21 @@ namespace ro.stancescu.CDep.ScraperLibrary
             return Url;
         }
 
-        internal async Task<IDocument> GetDocument()
+        internal IDocument GetDocument()
         {
             using (var stream = GetCachedByUrl(Url))
             {
                 if (stream != null)
                 {
-                    var document = await GetDocumentFromStream(stream);
+                    var document = GetDocumentFromStream(stream);
                     stream.Close();
                     return document;
                 }
             }
 
-            var result = await GetLiveBaseDocument();
+            var result = GetLiveBaseDocument();
 
-            await SaveCachedByUrl(Url);
+            SaveCachedByUrl(Url);
 
             return result;
         }

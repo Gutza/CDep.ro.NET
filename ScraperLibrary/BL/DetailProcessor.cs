@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading.Tasks;
 using System.Xml.Serialization;
 
 namespace ro.stancescu.CDep.ScraperLibrary
@@ -16,7 +17,6 @@ namespace ro.stancescu.CDep.ScraperLibrary
         public static event EventHandler OnNetworkStop;
 
         private const string URI_FORMAT = "http://www.cdep.ro/pls/steno/evot2015.xml?par1=2&par2={0}";
-        static WebClient web = null;
 
         static Dictionary<string, MPDBE> MPCache = new Dictionary<string, MPDBE>();
         static Dictionary<string, PoliticalGroupDBE> PGCache = new Dictionary<string, PoliticalGroupDBE>();
@@ -52,26 +52,14 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
             var url = String.Format(URI_FORMAT, voteSummary.VoteIDCDep);
 
-            if (web == null)
-            {
-                web = new WebClient();
-            }
-
             StartNetwork();
-            var webStream = web.OpenRead(url);
-            VoteDetailCollectionDIO detailData;
-            using (var streamReader = new StreamReader(webStream, Encoding.GetEncoding("ISO-8859-2")))
-            {
-                if (streamReader.EndOfStream)
-                {
-                    StopNetwork();
-                    return;
-                }
-                XmlSerializer summarySerializer = new XmlSerializer(typeof(VoteDetailCollectionDIO));
-                detailData = (VoteDetailCollectionDIO)summarySerializer.Deserialize(streamReader);
-                detailData.Vote = voteSummary;
-            }
+            var scraper = new BaseXmlScraper<VoteDetailCollectionDIO>(url);
+            var detailData = scraper.GetDocument();
             StopNetwork();
+            if (detailData == null)
+            {
+                return;
+            }
             ProcessData(detailData, session, newRecord);
             using (var trans = session.BeginTransaction())
             {
@@ -85,8 +73,10 @@ namespace ro.stancescu.CDep.ScraperLibrary
         {
             using (var trans = session.BeginTransaction())
             {
+                int i = 0;
                 foreach (var detailEntry in detailList.VoteDetail)
                 {
+                    i++;
                     MPDBE MP;
                     var MPCacheKey = detailEntry.FirstName + "//" + detailEntry.LastName;
                     if (MPCache.ContainsKey(MPCacheKey))
@@ -138,7 +128,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
                     }
 
                     VoteDetailDBE.VoteCastType voteCast;
-                    switch(detailEntry.VoteCast)
+                    switch (detailEntry.VoteCast)
                     {
                         case "DA":
                             voteCast = VoteDetailDBE.VoteCastType.VotedFor;
@@ -163,9 +153,10 @@ namespace ro.stancescu.CDep.ScraperLibrary
                         VoteCast = voteCast,
                         PoliticalGroup = politicalGroup,
                     };
-                    session.InsertAsync(voteDetail);
+                    session.Insert(voteDetail);
                 }
-                trans.CommitAsync();
+                Console.WriteLine("");
+                trans.Commit();
             }
         }
     }
