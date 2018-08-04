@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ro.stancescu.CDep.BusinessEntities.DBEntities
+namespace ro.stancescu.CDep.BusinessEntities
 {
-    enum Chambers
+    public enum Chambers
     {
         InvalidChamber = 0,
         Deputees,
