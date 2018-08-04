@@ -14,7 +14,6 @@ namespace ro.stancescu.CDep.BusinessEntities.DBMapping
             Table("VoteSummary");
             Id(x => x.Id).GeneratedBy.Native();
             References(x => x.ParliamentaryDay);
-            Map(x => x.Chamber);
             Map(x => x.VoteIDCDep);
             Map(x => x.VoteTime);
             Map(x => x.Description).Length(1000000);

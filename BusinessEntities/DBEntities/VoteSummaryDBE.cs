@@ -22,7 +22,6 @@ namespace ro.stancescu.CDep.BusinessEntities
         public virtual ParliamentaryDayDBE ParliamentaryDay { get; set; }
         public virtual DateTime VoteTime { get; set; }
         public virtual string Description { get; set; }
-        public virtual int Chamber { get; set; }
         public virtual int CountPresent { get; set; }
 
         public virtual int CountHaveNotVoted { get; set; }

@@ -106,6 +106,8 @@ namespace ro.stancescu.CDep.ScraperLibrary
                     parliamentaryDay = new ParliamentaryDayDBE()
                     {
                         Date = summaryList.VoteDate,
+                        Chamber = Chambers.Deputees,
+                        ProcessingComplete = false,
                     };
                     sess.Insert(parliamentaryDay);
                 }
@@ -138,7 +140,6 @@ namespace ro.stancescu.CDep.ScraperLibrary
                         {
                             VoteIDCDep = summaryEntry.VoteId,
                             ParliamentaryDay = parliamentaryDay,
-                            Chamber = summaryEntry.Chamber,
                             CountAbstentions = summaryEntry.CountAbstentions,
                             CountHaveNotVoted = summaryEntry.CountHaveNotVoted,
                             CountPresent = summaryEntry.CountPresent,
