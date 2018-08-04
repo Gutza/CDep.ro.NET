@@ -15,12 +15,6 @@ namespace ro.stancescu.CDep.ScraperLibrary
     public abstract class BaseAngleSharpScraper : BaseDocumentCache
     {
         /// <summary>
-        /// The local <see cref="Logger"/>.
-        /// Guaranteeed to be set in all descendants.
-        /// </summary>
-        protected Logger LocalLogger = null;
-
-        /// <summary>
         /// The number of network retries.
         /// Should be obeyed by all descendants.
         /// </summary>
@@ -32,17 +26,6 @@ namespace ro.stancescu.CDep.ScraperLibrary
         /// actually access the network.
         /// </summary>
         protected IDocument LiveDocument = null;
-
-        /// <summary>
-        /// The only public entry point for all descendants.
-        /// </summary>
-        public virtual void Init()
-        {
-            if (LocalLogger == null)
-            {
-                LocalLogger = LogManager.GetCurrentClassLogger();
-            }
-        }
 
         /// <summary>
         /// Unconditionally returns <paramref name="document"/> (NOT <see cref="liveDocument"/>!).

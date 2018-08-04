@@ -23,13 +23,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
         internal async Task<IDocument> GetDocument()
         {
-            var invalid = System.IO.Path.GetInvalidFileNameChars();
-            var cacheId = Url.Replace('/', '!').Replace(':', '.').Replace('?', '@');
-            foreach(char invalidChar in invalid)
-            {
-                cacheId = cacheId.Replace(invalidChar, '-');
-            }
-            var doc = await GetCached(cacheId);
+            var doc = await GetCachedByUrl(Url);
             if (doc != null)
             {
                 return doc;
@@ -37,7 +31,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
             var result = await GetLiveBaseDocument();
 
-            SaveCached(cacheId);
+            await SaveCachedByUrl(Url);
 
             return result;
         }

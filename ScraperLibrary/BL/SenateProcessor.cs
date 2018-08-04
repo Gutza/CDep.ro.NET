@@ -14,7 +14,6 @@ namespace ro.stancescu.CDep.ScraperLibrary
         public async void Execute()
         {
             var calendarScraper = new SenateCalendarScraper();
-            calendarScraper.Init();
 
             var scraperMonthYear = SenateCalendarScraper.HistoryStart;
             var currentMonthYear = DateTime.Now;

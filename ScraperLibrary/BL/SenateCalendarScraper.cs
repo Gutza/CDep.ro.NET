@@ -59,7 +59,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
         internal async Task<IDocument> GetYearMonthDocument(int year, int month)
         {
             var cacheId = GetCacheIdForDate(new DateTime(year, month, 1));
-            var doc = await GetCached(cacheId);
+            var doc = await GetCachedByKey(cacheId);
             if (doc != null)
             {
                 return doc;
@@ -69,7 +69,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
             await SetLiveMonthIndex(year, month);
 
-            SaveCached(cacheId);
+            SaveCachedByKey(cacheId);
 
             return LiveDocument;
         }
@@ -215,7 +215,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
         {
             var dateAsDate = DateTimeFromDateIndex(dateDescriptor.UniqueDateIndex);
             var cacheId = GetCacheIdForDate(dateAsDate);
-            var doc = await GetCached(cacheId);
+            var doc = await GetCachedByKey(cacheId);
             if (doc != null)
             {
                 return doc;
@@ -223,7 +223,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
             await GetLiveBaseDocument();
             SetLiveDateIndexAsync(dateDescriptor);
             await SubmitLiveAspForm();
-            SaveCached(cacheId);
+            SaveCachedByKey(cacheId);
             return LiveDocument;
         }
 

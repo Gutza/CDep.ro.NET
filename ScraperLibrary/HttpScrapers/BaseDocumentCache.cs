@@ -1,6 +1,7 @@
 ﻿using AngleSharp;
 using AngleSharp.Dom;
 using AngleSharp.Parser.Html;
+using NLog;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -22,6 +23,12 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
     public abstract class BaseDocumentCache
     {
+        /// <summary>
+        /// The local <see cref="Logger"/>.
+        /// Guaranteeed to be set in all descendants.
+        /// </summary>
+        protected Logger LocalLogger { get { return LogManager.GetCurrentClassLogger(); } }
+
         [Flags]
         private enum CacheTypes
         {
@@ -52,7 +59,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
         protected abstract string GetBaseUrl();
 
 
-        protected async Task<IDocument> GetCached(string cacheId)
+        protected async Task<IDocument> GetCachedByKey(string cacheId)
         {
             if (!CacheDict[CacheMode].HasFlag(CacheTypes.Readable))
             {
@@ -75,7 +82,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
             return document;
         }
 
-        protected async void SaveCached(string cacheId)
+        protected async Task SaveCachedByKey(string cacheId)
         {
             if (!CacheDict[CacheMode].HasFlag(CacheTypes.Writable))
             {
@@ -99,6 +106,28 @@ namespace ro.stancescu.CDep.ScraperLibrary
                 await fp.WriteAsync(stringBuffer, 0, stringBuffer.Length);
                 fp.Close();
             }
+        }
+
+        protected async Task<IDocument> GetCachedByUrl(string url)
+        {
+            return await GetCachedByKey(ResolveUrlToCacheKey(url));
+        }
+
+        protected async Task SaveCachedByUrl(string url)
+        {
+            await SaveCachedByKey(ResolveUrlToCacheKey(url));
+        }
+
+        protected string ResolveUrlToCacheKey(string url)
+        {
+            var invalid = System.IO.Path.GetInvalidFileNameChars();
+            var cacheId = url.Replace('/', '!').Replace(':', '.').Replace('?', '@');
+            foreach (char invalidChar in invalid)
+            {
+                cacheId = cacheId.Replace(invalidChar, '-');
+            }
+
+            return cacheId;
         }
 
         private FileStream GetCacheReadStream(string cacheId)

@@ -79,21 +79,22 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BaseDocumentCache.cs" />
-    <Compile Include="DetailProcessor.cs" />
-    <Compile Include="MPParser.cs" />
-    <Compile Include="NetworkFailureConnectionException.cs" />
-    <Compile Include="ParliamentarySessionParser.cs" />
+    <Compile Include="HttpScrapers\BaseDocumentCache.cs" />
+    <Compile Include="BL\DetailProcessor.cs" />
+    <Compile Include="BL\MPParser.cs" />
+    <Compile Include="HttpScrapers\BaseXmlScraper.cs" />
+    <Compile Include="Utils\NetworkFailureConnectionException.cs" />
+    <Compile Include="BL\ParliamentarySessionParser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="GenericAspScraper.cs" />
-    <Compile Include="SenateCalendarDateDTO.cs" />
-    <Compile Include="GenericHtmlScraper.cs" />
-    <Compile Include="BaseAngleSharpScraper.cs" />
-    <Compile Include="SenateCalendarScraper.cs" />
-    <Compile Include="SenateProcessor.cs" />
-    <Compile Include="SenateVoteSummaryDTO.cs" />
-    <Compile Include="SummaryProcessor.cs" />
-    <Compile Include="UnexpectedPageContentException.cs" />
+    <Compile Include="HttpScrapers\GenericAspScraper.cs" />
+    <Compile Include="DTOs\SenateCalendarDateDTO.cs" />
+    <Compile Include="HttpScrapers\GenericHtmlScraper.cs" />
+    <Compile Include="HttpScrapers\BaseAngleSharpScraper.cs" />
+    <Compile Include="BL\SenateCalendarScraper.cs" />
+    <Compile Include="BL\SenateProcessor.cs" />
+    <Compile Include="DTOs\SenateVoteSummaryDTO.cs" />
+    <Compile Include="BL\SummaryProcessor.cs" />
+    <Compile Include="Utils\UnexpectedPageContentException.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
