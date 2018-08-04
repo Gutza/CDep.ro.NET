@@ -77,6 +77,7 @@
     <Compile Include="DataInterchange\VoteDetailCollectionDIO.cs" />
     <Compile Include="DataInterchange\VoteDetailDIO.cs" />
     <Compile Include="DataInterchange\VoteSummaryCollectionDIO.cs" />
+    <Compile Include="DBEntities\ChamberEnum.cs" />
     <Compile Include="DBEntities\MPDBE.cs" />
     <Compile Include="DBEntities\ParliamentaryDayDBE.cs" />
     <Compile Include="DBEntities\PoliticalGroupDBE.cs" />
