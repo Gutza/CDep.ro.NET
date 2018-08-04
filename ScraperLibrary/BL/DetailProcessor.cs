@@ -85,13 +85,14 @@ namespace ro.stancescu.CDep.ScraperLibrary
                     }
                     else
                     {
-                        MP = session.QueryOver<MPDBE>().Where(mp => mp.FirstName == detailEntry.FirstName && mp.LastName == detailEntry.LastName).List().FirstOrDefault();
+                        MP = session.QueryOver<MPDBE>().Where(mp => mp.FirstName == detailEntry.FirstName && mp.LastName == detailEntry.LastName && mp.Chamber == Chambers.Deputees).List().FirstOrDefault();
                         if (MP == null)
                         {
                             MP = new MPDBE()
                             {
                                 FirstName = detailEntry.FirstName,
                                 LastName = detailEntry.LastName,
+                                Chamber = Chambers.Deputees,
                             };
                             session.Insert(MP);
                         }
@@ -155,7 +156,6 @@ namespace ro.stancescu.CDep.ScraperLibrary
                     };
                     session.Insert(voteDetail);
                 }
-                Console.WriteLine("");
                 trans.Commit();
             }
         }

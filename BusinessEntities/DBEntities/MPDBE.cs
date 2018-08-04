@@ -17,6 +17,8 @@ namespace ro.stancescu.CDep.BusinessEntities
 
         public virtual string FirstName { get; set; }
 
+        public virtual Chambers Chamber { get; set; }
+
         public virtual ISet<VoteDetailDBE> VotesCast { get; set; }
     }
 }
