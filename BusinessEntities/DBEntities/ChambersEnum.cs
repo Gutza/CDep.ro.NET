@@ -9,7 +9,7 @@ namespace ro.stancescu.CDep.BusinessEntities
     public enum Chambers
     {
         InvalidChamber = 0,
-        Deputees,
-        Senators,
+        ChamberOfDeputees,
+        Senate,
     }
 }
