@@ -20,7 +20,7 @@ using AngleSharp.Extensions;
 
 namespace ro.stancescu.CDep.ScraperLibrary
 {
-    internal class SenateCalendarScraper : GenericAspScraper
+    internal class SenCalendarScraper : GenericAspScraper
     {
         private static readonly DateTime DateIndexZero = new DateTime(2000, 1, 1);
 

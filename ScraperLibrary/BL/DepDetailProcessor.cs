@@ -11,7 +11,7 @@ using System.Xml.Serialization;
 
 namespace ro.stancescu.CDep.ScraperLibrary
 {
-    public class DetailProcessor
+    public class DepDetailProcessor
     {
         public static event EventHandler OnNetworkStart;
         public static event EventHandler OnNetworkStop;
@@ -53,7 +53,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
             var url = String.Format(URI_FORMAT, voteSummary.VoteIDCDep);
 
             StartNetwork();
-            var scraper = new BaseXmlScraper<VoteDetailCollectionDIO>(url);
+            var scraper = new GenericXmlScraper<VoteDetailCollectionDIO>(url);
             var detailData = scraper.GetDocument();
             StopNetwork();
             if (detailData == null)
@@ -85,14 +85,14 @@ namespace ro.stancescu.CDep.ScraperLibrary
                     }
                     else
                     {
-                        MP = session.QueryOver<MPDBE>().Where(mp => mp.FirstName == detailEntry.FirstName && mp.LastName == detailEntry.LastName && mp.Chamber == Chambers.Deputees).List().FirstOrDefault();
+                        MP = session.QueryOver<MPDBE>().Where(mp => mp.FirstName == detailEntry.FirstName && mp.LastName == detailEntry.LastName && mp.Chamber == Chambers.ChamberOfDeputees).List().FirstOrDefault();
                         if (MP == null)
                         {
                             MP = new MPDBE()
                             {
                                 FirstName = detailEntry.FirstName,
                                 LastName = detailEntry.LastName,
-                                Chamber = Chambers.Deputees,
+                                Chamber = Chambers.ChamberOfDeputees,
                             };
                             session.Insert(MP);
                         }

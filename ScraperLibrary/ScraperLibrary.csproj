@@ -79,21 +79,23 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DTOs\SenateVoteDTO.cs" />
     <Compile Include="HttpScrapers\BaseDocumentCache.cs" />
-    <Compile Include="BL\DetailProcessor.cs" />
-    <Compile Include="BL\MPParser.cs" />
-    <Compile Include="HttpScrapers\BaseXmlScraper.cs" />
+    <Compile Include="BL\DepDetailProcessor.cs" />
+    <Compile Include="BL\DepMPParser.cs" />
+    <Compile Include="HttpScrapers\GenericXmlScraper.cs" />
+    <Compile Include="HttpScrapers\SenVoteDescriptionScraper.cs" />
     <Compile Include="Utils\NetworkFailureConnectionException.cs" />
-    <Compile Include="BL\ParliamentarySessionParser.cs" />
+    <Compile Include="BL\DepParliamentarySessionParser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="HttpScrapers\GenericAspScraper.cs" />
     <Compile Include="DTOs\SenateCalendarDateDTO.cs" />
     <Compile Include="HttpScrapers\GenericHtmlScraper.cs" />
     <Compile Include="HttpScrapers\BaseAngleSharpScraper.cs" />
-    <Compile Include="BL\SenateCalendarScraper.cs" />
+    <Compile Include="HttpScrapers\SenCalendarScraper.cs" />
     <Compile Include="BL\SenateProcessor.cs" />
     <Compile Include="DTOs\SenateVoteSummaryDTO.cs" />
-    <Compile Include="BL\SummaryProcessor.cs" />
+    <Compile Include="BL\DepSummaryProcessor.cs" />
     <Compile Include="Utils\UnexpectedPageContentException.cs" />
   </ItemGroup>
   <ItemGroup>

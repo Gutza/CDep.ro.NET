@@ -10,7 +10,7 @@ using System.Xml.Serialization;
 
 namespace ro.stancescu.CDep.ScraperLibrary
 {
-    public class SummaryProcessor
+    public class DepSummaryProcessor
     {
         private const string URI_FORMAT = "http://www.cdep.ro/pls/steno/evot2015.xml?par1=1&par2={0}";
         static ISessionFactory GlobalSessionFactory;
@@ -59,8 +59,8 @@ namespace ro.stancescu.CDep.ScraperLibrary
         public static void Init(ISessionFactory session)
         {
             GlobalSessionFactory = session;
-            DetailProcessor.OnNetworkStart += StartNetwork;
-            DetailProcessor.OnNetworkStop += StopNetwork;
+            DepDetailProcessor.OnNetworkStart += StartNetwork;
+            DepDetailProcessor.OnNetworkStop += StopNetwork;
         }
 
         public static void Process(DateTime date)
@@ -68,7 +68,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
             var url = String.Format(URI_FORMAT, date.Year + date.Month.ToString("D2") + date.Day.ToString("D2"));
 
             StartNetwork();
-            var scraper = new BaseXmlScraper<VoteSummaryCollectionDIO>(url);
+            var scraper = new GenericXmlScraper<VoteSummaryCollectionDIO>(url);
 
             var summaryData = Task.Run(() => scraper.GetDocument()).Result;
             if (summaryData == null)
@@ -96,7 +96,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
                     parliamentaryDay = new ParliamentaryDayDBE()
                     {
                         Date = summaryList.VoteDate,
-                        Chamber = Chambers.Deputees,
+                        Chamber = Chambers.ChamberOfDeputees,
                         ProcessingComplete = false,
                     };
                     sess.Insert(parliamentaryDay);
@@ -123,7 +123,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
                             // Already processed
                             trans.Commit();
 
-                            DetailProcessor.Process(voteSummary, sess, false);
+                            DepDetailProcessor.Process(voteSummary, sess, false);
                             continue;
                         }
 
@@ -144,7 +144,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
                         trans.Commit();
                     }
-                    DetailProcessor.Process(voteSummary, sess, true);
+                    DepDetailProcessor.Process(voteSummary, sess, true);
                 }
 
                 using (var trans = sess.BeginTransaction())

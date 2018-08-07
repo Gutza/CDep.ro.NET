@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace ro.stancescu.CDep.ScraperLibrary
 {
-    public class MPParser
+    public class DepMPParser
     {
         private WebClient web;
 

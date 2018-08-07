@@ -9,12 +9,12 @@ using System.Xml.Serialization;
 
 namespace ro.stancescu.CDep.ScraperLibrary
 {
-    public class BaseXmlScraper<T> : BaseDocumentCache
+    public class GenericXmlScraper<T> : BaseDocumentCache
     {
         internal string Url { get; private set; }
         string CurrentXmlString = null;
 
-        internal BaseXmlScraper(string url)
+        internal GenericXmlScraper(string url)
         {
             Url = url;
         }

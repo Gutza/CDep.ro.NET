@@ -1,6 +1,8 @@
 ﻿using AngleSharp.Dom;
 using AngleSharp.Dom.Html;
+using NHibernate;
 using NLog;
+using ro.stancescu.CDep.BusinessEntities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,11 +13,18 @@ namespace ro.stancescu.CDep.ScraperLibrary
 {
     public class SenateProcessor
     {
+        private static ISessionFactory GlobalSessionFactory;
+
+        public static void Init(ISessionFactory session)
+        {
+            GlobalSessionFactory = session;
+        }
+
         public void Execute()
         {
-            var calendarScraper = new SenateCalendarScraper();
+            var calendarScraper = new SenCalendarScraper();
 
-            var scraperMonthYear = SenateCalendarScraper.HistoryStart;
+            var scraperMonthYear = SenCalendarScraper.HistoryStart;
             var currentMonthYear = DateTime.Now;
             while (
                 scraperMonthYear.Year < currentMonthYear.Year ||
@@ -35,10 +44,10 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
                 foreach (var scraperDate in scraperMonthDates)
                 {
-                    var currentDate = SenateCalendarScraper.DateTimeFromDateIndex(scraperDate.UniqueDateIndex);
+                    var currentDate = SenCalendarScraper.DateTimeFromDateIndex(scraperDate.UniqueDateIndex);
                     Console.WriteLine("Processing date " + currentDate.ToShortDateString() + " (index " + scraperDate.UniqueDateIndex + ")");
                     scraperDoc = calendarScraper.GetYearMonthDayDocument(scraperDate);
-                    var mainTable = SenateCalendarScraper.GetCalendarVoteTable(scraperDoc);
+                    var mainTable = SenCalendarScraper.GetCalendarVoteTable(scraperDoc);
                     if (mainTable == null)
                     {
                         LogManager.GetCurrentClassLogger().Info("Failed to find the votes table in a presumably cyan document for date " + currentDate.ToShortDateString() + "; this is par for the course.");
@@ -51,20 +60,54 @@ namespace ro.stancescu.CDep.ScraperLibrary
                         Console.WriteLine("There are no vote summaries for date " + currentDate.ToShortDateString());
                     }
 
-                    foreach (var summary in voteSummaries)
+                    using (var sess = GlobalSessionFactory.OpenStatelessSession())
                     {
-                        if (!string.IsNullOrEmpty(summary.VoteNameUri))
+                        ParliamentaryDayDBE dayDBE;
+                        using (var trans = sess.BeginTransaction())
                         {
-                            Console.WriteLine("Processing vote name page in date " + currentDate.ToShortDateString() + " with url «" + summary.VoteNameUri + "»");
-                            var scraper = new GenericHtmlScraper(summary.VoteNameUri);
-                            var doc = scraper.GetDocument();
+                            dayDBE = sess.
+                                QueryOver<ParliamentaryDayDBE>().
+                                Where(pd => pd.Chamber == Chambers.Senate && pd.Date == currentDate).
+                                List().
+                                FirstOrDefault();
+
+                            if (dayDBE!=null && dayDBE.ProcessingComplete)
+                            {
+                                // Skip it if it was already processed.
+                                continue;
+                            }
+
+                            if (dayDBE == null)
+                            {
+                                dayDBE = new ParliamentaryDayDBE()
+                                {
+                                    Chamber = Chambers.Senate,
+                                    Date = currentDate,
+                                    ProcessingComplete = false,
+                                };
+                                sess.Insert(dayDBE);
+                            }
+
+                            trans.Commit();
                         }
 
-                        if (!string.IsNullOrEmpty(summary.VoteDescriptionUri))
+                        foreach (var summary in voteSummaries)
                         {
-                            Console.WriteLine("Processing vote description page in date " + currentDate.ToShortDateString() + " with url «" + summary.VoteDescriptionUri + "»");
-                            var scraper = new GenericHtmlScraper(summary.VoteDescriptionUri);
-                            var doc = scraper.GetDocument();
+                            if (!string.IsNullOrEmpty(summary.VoteNameUri))
+                            {
+                                Console.WriteLine("Processing vote name page in date " + currentDate.ToShortDateString() + " with url «" + summary.VoteNameUri + "»");
+                                var scraper = new GenericHtmlScraper(summary.VoteNameUri);
+                                var doc = scraper.GetDocument();
+                                ProcessVoteName(doc, dayDBE, sess);
+                            }
+
+                            if (!string.IsNullOrEmpty(summary.VoteDescriptionUri))
+                            {
+                                Console.WriteLine("Processing vote description page in date " + currentDate.ToShortDateString() + " with url «" + summary.VoteDescriptionUri + "»");
+                                var scraper = new GenericHtmlScraper(summary.VoteDescriptionUri);
+                                var doc = scraper.GetDocument();
+                                ProcessVoteDescription(doc, dayDBE, sess);
+                            }
                         }
                     }
 
@@ -72,6 +115,20 @@ namespace ro.stancescu.CDep.ScraperLibrary
                 scraperMonthYear = scraperMonthYear.AddMonths(1);
             }
             Console.WriteLine("Finished processing the Senate data.");
+        }
+
+        private void ProcessVoteDescription(IDocument doc, ParliamentaryDayDBE dayDBE, IStatelessSession sess)
+        {
+            var voteDTOs = SenVoteDescriptionScraper.GetSenateVotes(doc);
+            if (voteDTOs == null)
+            {
+                return;
+            }
+        }
+
+        private void ProcessVoteName(IDocument doc, ParliamentaryDayDBE dayDBE, IStatelessSession sess)
+        {
+            // TODO: Implement this at a later date, if needed
         }
 
         private List<SenateVoteSummaryDTO> ProcessCalendarVoteTable(DateTime currentDate, IHtmlTableElement htmlTableElement)
@@ -84,7 +141,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
             try
             {
-                return SenateCalendarScraper.GetVoteSummaries(currentDate, htmlTableElement);
+                return SenCalendarScraper.GetVoteSummaries(currentDate, htmlTableElement);
             }
             catch (UnexpectedPageContentException ex)
             {
