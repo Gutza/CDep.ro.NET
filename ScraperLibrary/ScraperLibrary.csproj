@@ -79,13 +79,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DTOs\MPDTO.cs" />
+    <Compile Include="DTOs\PoliticalGroupDTO.cs" />
     <Compile Include="DTOs\SenateVoteDTO.cs" />
+    <Compile Include="Exceptions\InconsistentDatabaseStateException.cs" />
     <Compile Include="HttpScrapers\BaseDocumentCache.cs" />
     <Compile Include="BL\DepDetailProcessor.cs" />
     <Compile Include="BL\DepMPParser.cs" />
     <Compile Include="HttpScrapers\GenericXmlScraper.cs" />
     <Compile Include="HttpScrapers\SenVoteDescriptionScraper.cs" />
-    <Compile Include="Utils\NetworkFailureConnectionException.cs" />
+    <Compile Include="Exceptions\NetworkFailureConnectionException.cs" />
     <Compile Include="BL\DepParliamentarySessionParser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="HttpScrapers\GenericAspScraper.cs" />
@@ -96,7 +99,8 @@
     <Compile Include="BL\SenateProcessor.cs" />
     <Compile Include="DTOs\SenateVoteSummaryDTO.cs" />
     <Compile Include="BL\DepSummaryProcessor.cs" />
-    <Compile Include="Utils\UnexpectedPageContentException.cs" />
+    <Compile Include="Exceptions\UnexpectedPageContentException.cs" />
+    <Compile Include="Utils\BasicDBEHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

@@ -193,59 +193,51 @@ namespace ro.stancescu.CDep.ScraperLibrary
             {
                 foreach (var voteDTO in voteDTOs)
                 {
-                    // TODO: Check if we already have the data for this particular vote before attempting to save it
                     if (voteDTO.PoliticalGroup == null)
                     {
                         voteDTO.PoliticalGroup = UNKNOWN_POLITICAL_GROUP;
                     }
 
+                    var mp = BasicDBEHelper.GetMP(new MPDTO()
+                    {
+                        Chamber = Chambers.Senate,
+                        FirstName = voteDTO.FirstName,
+                        LastName = voteDTO.LastName,
+                    }, sess);
+
                     VoteDetailDBE voteDetailDBE = null;
-
-                    var politicalGroupDBE = RetrievePoliticalGroup(voteDTO.PoliticalGroup);
-
-
-                    if (newVote)
+                    if (!newVote)
                     {
                         voteDetailDBE = sess
                             .QueryOver<VoteDetailDBE>()
-                            .Where(vd => vd.MP == mp && vd.PoliticalGroup == politicalGroupDBE)
+                            .Where(vd => vd.Vote == voteSummaryDBE && vd.MP == mp)
                             .List()
                             .FirstOrDefault();
+
+                        if (voteDetailDBE != null)
+                        {
+                            // TODO: Also check if we have the same vote cast, and the same political group as the ones in the database
+                            // TODO: Also check the same for CDep
+                            // Already saved
+                            continue;
+                        }
                     }
+
+                    var politicalGroupDBE = BasicDBEHelper.GetPoliticalGroup(new PoliticalGroupDTO()
+                    {
+                        Name = voteDTO.PoliticalGroup
+                    }, sess);
 
                     voteDetailDBE = new VoteDetailDBE()
                     {
                         VoteCast = voteDTO.Vote,
                         Vote = voteSummaryDBE,
-                        MP = null, // TODO: Fill this in beforehand!
+                        MP = mp, // TODO: Fill this in beforehand!
                         PoliticalGroup = null, // TODO: Fill this in beforehand!
                     };
                     sess.Insert(voteDetailDBE);
 
                 }
-            }
-        }
-
-        private PoliticalGroupDBE RetrievePoliticalGroup(string politicalGroup, IStatelessSession sess)
-        {
-            if (PGDict.ContainsKey(politicalGroup))
-            {
-                return PGDict[politicalGroup];
-            }
-
-            var pg = sess
-                    .QueryOver<PoliticalGroupDBE>()
-                    .Where(pg => pg.Name == politicalGroup)
-                    .List()
-                    .FirstOrDefault();
-
-            if (politicalGroupDBE == null)
-            {
-                politicalGroupDBE = new PoliticalGroupDBE()
-                {
-                    Name = voteDTO.PoliticalGroup,
-                };
-                sess.Insert(politicalGroupDBE);
             }
         }
 

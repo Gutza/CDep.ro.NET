@@ -18,9 +18,6 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
         private const string URI_FORMAT = "http://www.cdep.ro/pls/steno/evot2015.xml?par1=2&par2={0}";
 
-        static Dictionary<string, MPDBE> MPCache = new Dictionary<string, MPDBE>();
-        static Dictionary<string, PoliticalGroupDBE> PGCache = new Dictionary<string, PoliticalGroupDBE>();
-
         #region UI Event Handlers
         protected static void StartNetwork()
         {
@@ -69,6 +66,13 @@ namespace ro.stancescu.CDep.ScraperLibrary
             }
         }
 
+        /// <summary>
+        /// Persists <see cref="VoteDetailCollectionDIO"/> entities.
+        /// </summary>
+        /// <param name="detailList">The vote collection to persist.</param>
+        /// <param name="session">The current database session.</param>
+        /// <param name="newRecord">True if this is guaranteed to be a new record, false otherwise.</param>
+        /// <exception cref="InconsistentDatabaseStateException">Thrown if <see cref="VoteDetailDBE"/> entities in the database are inconsistent with the data being scraped.</exception>
         public static void ProcessData(VoteDetailCollectionDIO detailList, IStatelessSession session, bool newRecord)
         {
             using (var trans = session.BeginTransaction())
@@ -77,62 +81,18 @@ namespace ro.stancescu.CDep.ScraperLibrary
                 foreach (var detailEntry in detailList.VoteDetail)
                 {
                     i++;
-                    MPDBE MP;
-                    var MPCacheKey = detailEntry.FirstName + "//" + detailEntry.LastName;
-                    if (MPCache.ContainsKey(MPCacheKey))
-                    {
-                        MP = MPCache[MPCacheKey];
-                    }
-                    else
-                    {
-                        MP = session.QueryOver<MPDBE>().Where(mp => mp.FirstName == detailEntry.FirstName && mp.LastName == detailEntry.LastName && mp.Chamber == Chambers.ChamberOfDeputees).List().FirstOrDefault();
-                        if (MP == null)
-                        {
-                            MP = new MPDBE()
-                            {
-                                FirstName = detailEntry.FirstName,
-                                LastName = detailEntry.LastName,
-                                Chamber = Chambers.ChamberOfDeputees,
-                            };
-                            session.Insert(MP);
-                        }
-                        MPCache[MPCacheKey] = MP;
-                    }
 
-                    VoteDetailDBE voteDetail;
-                    if (!newRecord)
+                    var mpDBE = BasicDBEHelper.GetMP(new MPDTO()
                     {
-                        voteDetail = session.
-                            QueryOver<VoteDetailDBE>().
-                            Where(vd => vd.Vote == detailList.Vote && vd.MP == MP).
-                            List().
-                            FirstOrDefault();
+                        Chamber = Chambers.ChamberOfDeputees,
+                        FirstName = detailEntry.FirstName,
+                        LastName = detailEntry.LastName,
+                    }, session);
 
-                        if (voteDetail != null)
-                        {
-                            continue;
-                        }
-                    }
-
-                    // TODO: Do this in a more integrated fashion with the Senate
-                    PoliticalGroupDBE politicalGroup;
-                    if (PGCache.ContainsKey(detailEntry.PoliticalGroup))
+                    PoliticalGroupDBE politicalGroupDBE = BasicDBEHelper.GetPoliticalGroup(new PoliticalGroupDTO()
                     {
-                        politicalGroup = PGCache[detailEntry.PoliticalGroup];
-                    }
-                    else
-                    {
-                        politicalGroup = session.QueryOver<PoliticalGroupDBE>().Where(pg => pg.Name == detailEntry.PoliticalGroup).List().FirstOrDefault();
-                        if (politicalGroup == null)
-                        {
-                            politicalGroup = new PoliticalGroupDBE()
-                            {
-                                Name = detailEntry.PoliticalGroup,
-                            };
-                            session.Insert(politicalGroup);
-                        }
-                        PGCache[detailEntry.PoliticalGroup] = politicalGroup;
-                    }
+                        Name = detailEntry.PoliticalGroup,
+                    }, session);
 
                     VoteDetailDBE.VoteCastType voteCast;
                     switch (detailEntry.VoteCast)
@@ -150,15 +110,34 @@ namespace ro.stancescu.CDep.ScraperLibrary
                             voteCast = VoteDetailDBE.VoteCastType.VotedNone;
                             break;
                         default:
-                            throw new InvalidOperationException("Unknown vote type: «" + detailEntry.VoteCast + "»");
+                            throw new UnexpectedPageContentException("Unknown vote type: «" + detailEntry.VoteCast + "»");
+                    }
+
+                    VoteDetailDBE voteDetail;
+                    if (!newRecord)
+                    {
+                        voteDetail = session.
+                            QueryOver<VoteDetailDBE>().
+                            Where(vd => vd.Vote == detailList.Vote && vd.MP == mpDBE).
+                            List().
+                            FirstOrDefault();
+
+                        if (voteDetail != null)
+                        {
+                            if (voteDetail.PoliticalGroup.Id != politicalGroupDBE.Id || voteDetail.VoteCast != voteCast)
+                            {
+                                throw new InconsistentDatabaseStateException("VoteDetailDBE record #" + voteDetail.Id + " is inconsistent with the data currently scraped!");
+                            }
+                            continue;
+                        }
                     }
 
                     voteDetail = new VoteDetailDBE()
                     {
                         Vote = detailList.Vote,
-                        MP = MP,
+                        MP = mpDBE,
                         VoteCast = voteCast,
-                        PoliticalGroup = politicalGroup,
+                        PoliticalGroup = politicalGroupDBE,
                     };
                     session.Insert(voteDetail);
                 }
