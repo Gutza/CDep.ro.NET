@@ -102,13 +102,19 @@ namespace ro.stancescu.CDep.ScraperLibrary
                     VoteDetailDBE voteDetail;
                     if (!newRecord)
                     {
-                        voteDetail = session.QueryOver<VoteDetailDBE>().Where(vd => vd.Vote == detailList.Vote && vd.MP == MP).List().FirstOrDefault();
+                        voteDetail = session.
+                            QueryOver<VoteDetailDBE>().
+                            Where(vd => vd.Vote == detailList.Vote && vd.MP == MP).
+                            List().
+                            FirstOrDefault();
+
                         if (voteDetail != null)
                         {
                             continue;
                         }
                     }
 
+                    // TODO: Do this in a more integrated fashion with the Senate
                     PoliticalGroupDBE politicalGroup;
                     if (PGCache.ContainsKey(detailEntry.PoliticalGroup))
                     {

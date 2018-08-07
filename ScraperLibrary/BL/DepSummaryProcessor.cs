@@ -86,11 +86,17 @@ namespace ro.stancescu.CDep.ScraperLibrary
             using (var sess = GlobalSessionFactory.OpenStatelessSession())
             {
                 int idx = 0;
-                var parliamentaryDay = sess.QueryOver<ParliamentaryDayDBE>().Where(ps => ps.Date == summaryList.VoteDate).List().FirstOrDefault();
+                var parliamentaryDay = sess.
+                    QueryOver<ParliamentaryDayDBE>().
+                    Where(ps => ps.Date == summaryList.VoteDate).
+                    List().
+                    FirstOrDefault();
+
                 if (parliamentaryDay != null && parliamentaryDay.ProcessingComplete)
                 {
                     return;
                 }
+
                 if (parliamentaryDay == null)
                 {
                     parliamentaryDay = new ParliamentaryDayDBE()

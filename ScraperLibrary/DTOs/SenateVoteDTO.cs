@@ -11,7 +11,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
     {
         internal string FirstName;
         internal string LastName;
-        internal string ParliamentaryGroup;
+        internal string PoliticalGroup;
         internal VoteDetailDBE.VoteCastType Vote;
     }
 }

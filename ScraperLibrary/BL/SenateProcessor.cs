@@ -13,8 +13,11 @@ namespace ro.stancescu.CDep.ScraperLibrary
 {
     public class SenateProcessor
     {
-        private const string UNKNOWN_PARLIAMENTARY_GROUP = "[unknown]";
+        private const string UNKNOWN_POLITICAL_GROUP = "[unknown]";
         private static ISessionFactory GlobalSessionFactory;
+
+        private static Dictionary<string, MPDBE> MPDict = new Dictionary<string, MPDBE>();
+        private static Dictionary<string, PoliticalGroupDBE> PGDict = new Dictionary<string, PoliticalGroupDBE>();
 
         public static void Init(ISessionFactory session)
         {
@@ -94,6 +97,43 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
                         foreach (var voteSummaryDTO in voteSummaryDTOs)
                         {
+                            VoteSummaryDBE voteSummaryDBE = null;
+                            bool newVote = false;
+                            using (var trans = sess.BeginTransaction())
+                            {
+                                voteSummaryDBE = sess.
+                                    QueryOver<VoteSummaryDBE>().
+                                    Where(vs => vs.ParliamentaryDay == dayDBE).
+                                    List().
+                                    FirstOrDefault();
+
+                                if (voteSummaryDBE != null && voteSummaryDBE.ProcessingComplete)
+                                {
+                                    // Skip if already processed.
+                                    continue;
+                                }
+
+                                if (voteSummaryDBE == null)
+                                {
+                                    voteSummaryDBE = new VoteSummaryDBE()
+                                    {
+                                        ParliamentaryDay = dayDBE,
+                                        Description = voteSummaryDTO.VoteDescription,
+                                        VoteTime = voteSummaryDTO.VoteTime,
+                                        CountVotesYes = voteSummaryDTO.CountFor,
+                                        CountVotesNo = voteSummaryDTO.CountAgainst,
+                                        CountAbstentions = voteSummaryDTO.CountAbstained,
+                                        CountHaveNotVoted = voteSummaryDTO.CountNotVoted,
+                                        CountPresent = voteSummaryDTO.CountPresent,
+                                        VoteIDCDep = 0, // TODO: Refactor this to persist the URL
+                                        ProcessingComplete = false,
+                                    };
+                                    sess.Insert(voteSummaryDTO);
+                                    newVote = true;
+                                }
+                                trans.Commit();
+                            }
+
                             if (!string.IsNullOrEmpty(voteSummaryDTO.VoteNameUri))
                             {
                                 Console.WriteLine("Processing vote name page in date " + currentDate.ToShortDateString() + " with url «" + voteSummaryDTO.VoteNameUri + "»");
@@ -107,7 +147,14 @@ namespace ro.stancescu.CDep.ScraperLibrary
                                 Console.WriteLine("Processing vote description page in date " + currentDate.ToShortDateString() + " with url «" + voteSummaryDTO.VoteDescriptionUri + "»");
                                 var scraper = new GenericHtmlScraper(voteSummaryDTO.VoteDescriptionUri);
                                 var doc = scraper.GetDocument();
-                                ProcessVoteDescription(doc, voteSummaryDTO, sess);
+                                ProcessVoteDescription(doc, voteSummaryDTO, voteSummaryDBE, newVote, sess);
+                            }
+
+                            using (var trans = sess.BeginTransaction())
+                            {
+                                voteSummaryDBE.ProcessingComplete = true;
+                                sess.Update(voteSummaryDBE);
+                                trans.Commit();
                             }
                         }
                     }
@@ -118,7 +165,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
             Console.WriteLine("Finished processing the Senate data.");
         }
 
-        private void ProcessVoteDescription(IDocument doc, SenateVoteSummaryDTO summaryDTO, IStatelessSession sess)
+        private void ProcessVoteDescription(IDocument doc, SenateVoteSummaryDTO voteSummaryDTO, VoteSummaryDBE voteSummaryDBE, bool newVote, IStatelessSession sess)
         {
             List<SenateVoteDTO> voteDTOs = null;
             try
@@ -127,42 +174,78 @@ namespace ro.stancescu.CDep.ScraperLibrary
             }
             catch (UnexpectedPageContentException ex)
             {
-                LogManager.GetCurrentClassLogger().Error(ex, "Unexpected content for Senate vote on " + summaryDTO.VoteTime);
+                LogManager.GetCurrentClassLogger().Error(ex, "Unexpected content for Senate vote on " + voteSummaryDTO.VoteTime);
                 return;
             }
             catch (Exception ex)
             {
-                LogManager.GetCurrentClassLogger().Fatal(ex, "Unexpected exception for Senate vote on " + summaryDTO.VoteTime);
+                LogManager.GetCurrentClassLogger().Fatal(ex, "Unexpected exception for Senate vote on " + voteSummaryDTO.VoteTime);
                 return;
             }
 
             if (voteDTOs == null)
             {
-                LogManager.GetCurrentClassLogger().Warn("No votes found for Senate vote on " + summaryDTO.VoteTime);
+                LogManager.GetCurrentClassLogger().Warn("No votes found for Senate vote on " + voteSummaryDTO.VoteTime);
                 return;
             }
 
             using (var trans = sess.BeginTransaction())
             {
-                // TODO: Insert the VoteSummaryDBE entity in the same transaction, and only check if that exists.
-                // TODO: Verify we're using the same logic for CDep.
-                foreach(var voteDTO in voteDTOs)
+                foreach (var voteDTO in voteDTOs)
                 {
-                    if (voteDTO.ParliamentaryGroup == null)
+                    // TODO: Check if we already have the data for this particular vote before attempting to save it
+                    if (voteDTO.PoliticalGroup == null)
                     {
-                        voteDTO.ParliamentaryGroup = UNKNOWN_PARLIAMENTARY_GROUP;
+                        voteDTO.PoliticalGroup = UNKNOWN_POLITICAL_GROUP;
                     }
 
-                    var voteDBE = new VoteDetailDBE()
+                    VoteDetailDBE voteDetailDBE = null;
+
+                    var politicalGroupDBE = RetrievePoliticalGroup(voteDTO.PoliticalGroup);
+
+
+                    if (newVote)
+                    {
+                        voteDetailDBE = sess
+                            .QueryOver<VoteDetailDBE>()
+                            .Where(vd => vd.MP == mp && vd.PoliticalGroup == politicalGroupDBE)
+                            .List()
+                            .FirstOrDefault();
+                    }
+
+                    voteDetailDBE = new VoteDetailDBE()
                     {
                         VoteCast = voteDTO.Vote,
-                        Vote = null, // TODO: Fill this in beforehand!
+                        Vote = voteSummaryDBE,
                         MP = null, // TODO: Fill this in beforehand!
                         PoliticalGroup = null, // TODO: Fill this in beforehand!
                     };
-                    sess.Insert(voteDBE);
+                    sess.Insert(voteDetailDBE);
 
                 }
+            }
+        }
+
+        private PoliticalGroupDBE RetrievePoliticalGroup(string politicalGroup, IStatelessSession sess)
+        {
+            if (PGDict.ContainsKey(politicalGroup))
+            {
+                return PGDict[politicalGroup];
+            }
+
+            var pg = sess
+                    .QueryOver<PoliticalGroupDBE>()
+                    .Where(pg => pg.Name == politicalGroup)
+                    .List()
+                    .FirstOrDefault();
+
+            if (politicalGroupDBE == null)
+            {
+                politicalGroupDBE = new PoliticalGroupDBE()
+                {
+                    Name = voteDTO.PoliticalGroup,
+                };
+                sess.Insert(politicalGroupDBE);
             }
         }
 

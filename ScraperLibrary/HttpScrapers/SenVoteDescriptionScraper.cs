@@ -90,7 +90,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
                 {
                     FirstName = voteColumns[0].TextContent,
                     LastName = voteColumns[1].TextContent,
-                    ParliamentaryGroup = parliamentaryGroup,
+                    PoliticalGroup = parliamentaryGroup,
                     Vote = vote,
                 });
             }
