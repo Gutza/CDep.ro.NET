@@ -9,6 +9,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+// TODO: Replace console output with logging output. Throughout the solution.
+// TODO: Remove the development GUI callbacks, they're obsolete now.
+// TODO: Consider using multiple database sessions for the Senate processor, we're currently stretching a single session for all processing.
 namespace ro.stancescu.CDep.ScraperLibrary
 {
     public class SenateProcessor
