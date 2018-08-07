@@ -80,11 +80,17 @@ namespace ro.stancescu.CDep.ScraperLibrary
                     throw new UnexpectedPageContentException("Found multiple votes on row " + rowNumber + ".");
                 }
 
+                var parliamentaryGroup = voteColumns[2].TextContent;
+                if (string.IsNullOrWhiteSpace(parliamentaryGroup))
+                {
+                    parliamentaryGroup = null;
+                }
+
                 result.Add(new SenateVoteDTO()
                 {
-                    FirstName = voteColumns[0].InnerHtml,
-                    LastName = voteColumns[1].InnerHtml,
-                    ParliamentaryGroup = voteColumns[2].InnerHtml,
+                    FirstName = voteColumns[0].TextContent,
+                    LastName = voteColumns[1].TextContent,
+                    ParliamentaryGroup = parliamentaryGroup,
                     Vote = vote,
                 });
             }

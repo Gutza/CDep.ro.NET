@@ -13,6 +13,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
 {
     public class SenateProcessor
     {
+        private const string UNKNOWN_PARLIAMENTARY_GROUP = "[unknown]";
         private static ISessionFactory GlobalSessionFactory;
 
         public static void Init(ISessionFactory session)
@@ -24,7 +25,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
         {
             var calendarScraper = new SenCalendarScraper();
 
-            var scraperMonthYear = SenCalendarScraper.HistoryStart;
+            var scraperMonthYear = SenCalendarScraper.HISTORY_START;
             var currentMonthYear = DateTime.Now;
             while (
                 scraperMonthYear.Year < currentMonthYear.Year ||
@@ -36,17 +37,17 @@ namespace ro.stancescu.CDep.ScraperLibrary
             {
                 Console.WriteLine("Processing month " + scraperMonthYear.ToShortDateString());
                 var scraperDoc = calendarScraper.GetYearMonthDocument(scraperMonthYear.Year, scraperMonthYear.Month);
-                var scraperMonthDates = calendarScraper.GetValidDates(scraperDoc);
-                if (scraperMonthDates.Count == 0)
+                var calendarDateDTOs = calendarScraper.GetValidDates(scraperDoc);
+                if (calendarDateDTOs.Count == 0)
                 {
                     Console.WriteLine("There are no dates to scrape in month " + scraperMonthYear.ToShortDateString());
                 }
 
-                foreach (var scraperDate in scraperMonthDates)
+                foreach (var calendarDateDTO in calendarDateDTOs)
                 {
-                    var currentDate = SenCalendarScraper.DateTimeFromDateIndex(scraperDate.UniqueDateIndex);
-                    Console.WriteLine("Processing date " + currentDate.ToShortDateString() + " (index " + scraperDate.UniqueDateIndex + ")");
-                    scraperDoc = calendarScraper.GetYearMonthDayDocument(scraperDate);
+                    var currentDate = SenCalendarScraper.DateTimeFromDateIndex(calendarDateDTO.UniqueDateIndex);
+                    Console.WriteLine("Processing date " + currentDate.ToShortDateString() + " (index " + calendarDateDTO.UniqueDateIndex + ")");
+                    scraperDoc = calendarScraper.GetYearMonthDayDocument(calendarDateDTO);
                     var mainTable = SenCalendarScraper.GetCalendarVoteTable(scraperDoc);
                     if (mainTable == null)
                     {
@@ -54,8 +55,8 @@ namespace ro.stancescu.CDep.ScraperLibrary
                         continue;
                     }
 
-                    var voteSummaries = ProcessCalendarVoteTable(currentDate, mainTable as IHtmlTableElement);
-                    if (voteSummaries.Count == 0)
+                    var voteSummaryDTOs = ProcessCalendarVoteTable(currentDate, mainTable as IHtmlTableElement);
+                    if (voteSummaryDTOs.Count == 0)
                     {
                         Console.WriteLine("There are no vote summaries for date " + currentDate.ToShortDateString());
                     }
@@ -71,7 +72,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
                                 List().
                                 FirstOrDefault();
 
-                            if (dayDBE!=null && dayDBE.ProcessingComplete)
+                            if (dayDBE != null && dayDBE.ProcessingComplete)
                             {
                                 // Skip it if it was already processed.
                                 continue;
@@ -91,22 +92,22 @@ namespace ro.stancescu.CDep.ScraperLibrary
                             trans.Commit();
                         }
 
-                        foreach (var summary in voteSummaries)
+                        foreach (var voteSummaryDTO in voteSummaryDTOs)
                         {
-                            if (!string.IsNullOrEmpty(summary.VoteNameUri))
+                            if (!string.IsNullOrEmpty(voteSummaryDTO.VoteNameUri))
                             {
-                                Console.WriteLine("Processing vote name page in date " + currentDate.ToShortDateString() + " with url «" + summary.VoteNameUri + "»");
-                                var scraper = new GenericHtmlScraper(summary.VoteNameUri);
+                                Console.WriteLine("Processing vote name page in date " + currentDate.ToShortDateString() + " with url «" + voteSummaryDTO.VoteNameUri + "»");
+                                var scraper = new GenericHtmlScraper(voteSummaryDTO.VoteNameUri);
                                 var doc = scraper.GetDocument();
                                 ProcessVoteName(doc, dayDBE, sess);
                             }
 
-                            if (!string.IsNullOrEmpty(summary.VoteDescriptionUri))
+                            if (!string.IsNullOrEmpty(voteSummaryDTO.VoteDescriptionUri))
                             {
-                                Console.WriteLine("Processing vote description page in date " + currentDate.ToShortDateString() + " with url «" + summary.VoteDescriptionUri + "»");
-                                var scraper = new GenericHtmlScraper(summary.VoteDescriptionUri);
+                                Console.WriteLine("Processing vote description page in date " + currentDate.ToShortDateString() + " with url «" + voteSummaryDTO.VoteDescriptionUri + "»");
+                                var scraper = new GenericHtmlScraper(voteSummaryDTO.VoteDescriptionUri);
                                 var doc = scraper.GetDocument();
-                                ProcessVoteDescription(doc, dayDBE, sess);
+                                ProcessVoteDescription(doc, voteSummaryDTO, sess);
                             }
                         }
                     }
@@ -117,12 +118,51 @@ namespace ro.stancescu.CDep.ScraperLibrary
             Console.WriteLine("Finished processing the Senate data.");
         }
 
-        private void ProcessVoteDescription(IDocument doc, ParliamentaryDayDBE dayDBE, IStatelessSession sess)
+        private void ProcessVoteDescription(IDocument doc, SenateVoteSummaryDTO summaryDTO, IStatelessSession sess)
         {
-            var voteDTOs = SenVoteDescriptionScraper.GetSenateVotes(doc);
+            List<SenateVoteDTO> voteDTOs = null;
+            try
+            {
+                voteDTOs = SenVoteDescriptionScraper.GetSenateVotes(doc);
+            }
+            catch (UnexpectedPageContentException ex)
+            {
+                LogManager.GetCurrentClassLogger().Error(ex, "Unexpected content for Senate vote on " + summaryDTO.VoteTime);
+                return;
+            }
+            catch (Exception ex)
+            {
+                LogManager.GetCurrentClassLogger().Fatal(ex, "Unexpected exception for Senate vote on " + summaryDTO.VoteTime);
+                return;
+            }
+
             if (voteDTOs == null)
             {
+                LogManager.GetCurrentClassLogger().Warn("No votes found for Senate vote on " + summaryDTO.VoteTime);
                 return;
+            }
+
+            using (var trans = sess.BeginTransaction())
+            {
+                // TODO: Insert the VoteSummaryDBE entity in the same transaction, and only check if that exists.
+                // TODO: Verify we're using the same logic for CDep.
+                foreach(var voteDTO in voteDTOs)
+                {
+                    if (voteDTO.ParliamentaryGroup == null)
+                    {
+                        voteDTO.ParliamentaryGroup = UNKNOWN_PARLIAMENTARY_GROUP;
+                    }
+
+                    var voteDBE = new VoteDetailDBE()
+                    {
+                        VoteCast = voteDTO.Vote,
+                        Vote = null, // TODO: Fill this in beforehand!
+                        MP = null, // TODO: Fill this in beforehand!
+                        PoliticalGroup = null, // TODO: Fill this in beforehand!
+                    };
+                    sess.Insert(voteDBE);
+
+                }
             }
         }
 

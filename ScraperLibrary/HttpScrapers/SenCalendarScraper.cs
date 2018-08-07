@@ -44,10 +44,10 @@ namespace ro.stancescu.CDep.ScraperLibrary
         };
 
         // The first cyan dates show up in September 2005, but they're actually empty
-        //public static readonly DateTime HistoryStart = new DateTime(2005, 9, 1);
+        //public static readonly DateTime HISTORY_START = new DateTime(2005, 9, 1);
 
-        // Real data starts showing up beginning with September 2007
-        public static readonly DateTime HistoryStart = new DateTime(2007, 9, 1);
+        // Real data starts showing up in September 2007
+        public static readonly DateTime HISTORY_START = new DateTime(2007, 9, 1);
 
         private const string CALENDAR_VOTE_DAY_CACHE_FORMAT = "senate-voteCalendar-ym-{0}-{1}-{2}";
 
