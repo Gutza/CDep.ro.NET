@@ -191,7 +191,6 @@ namespace ro.stancescu.CDep.ScraperLibrary
                 return;
             }
 
-            // TODO: All these checks for previous votes are useless, because all detail entries are committed in a single transaction!
             using (var trans = sess.BeginTransaction())
             {
                 foreach (var voteDTO in voteDTOs)
@@ -213,33 +212,13 @@ namespace ro.stancescu.CDep.ScraperLibrary
                         Name = voteDTO.PoliticalGroup
                     }, sess);
 
-                    VoteDetailDBE voteDetailDBE = null;
-                    if (!newVote)
-                    {
-                        voteDetailDBE = sess
-                            .QueryOver<VoteDetailDBE>()
-                            .Where(vd => vd.Vote == voteSummaryDBE && vd.MP == mp)
-                            .List()
-                            .FirstOrDefault();
-
-                        if (voteDetailDBE != null)
-                        {
-                            if (voteDetailDBE.PoliticalGroup.Id!=politicalGroupDBE.Id || voteDetailDBE.VoteCast!=voteDTO.Vote)
-                            {
-                                throw new InconsistentDatabaseStateException("VoteDetailDBE record #" + voteDetailDBE.Id + " is inconsistent with the data currently scraped!");
-                            }
-                            continue;
-                        }
-                    }
-
-                    voteDetailDBE = new VoteDetailDBE()
+                    sess.Insert(new VoteDetailDBE()
                     {
                         VoteCast = voteDTO.Vote,
                         Vote = voteSummaryDBE,
                         MP = mp,
                         PoliticalGroup = politicalGroupDBE,
-                    };
-                    sess.Insert(voteDetailDBE);
+                    });
                 }
                 trans.Commit();
             }

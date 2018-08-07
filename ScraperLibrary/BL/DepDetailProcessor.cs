@@ -76,14 +76,10 @@ namespace ro.stancescu.CDep.ScraperLibrary
         /// <exception cref="InconsistentDatabaseStateException">Thrown if <see cref="VoteDetailDBE"/> entities in the database are inconsistent with the data being scraped.</exception>
         public static void ProcessData(VoteDetailCollectionDIO detailList, IStatelessSession session, bool newRecord)
         {
-            // TODO: All these checks for previous votes are useless, because all detail entries are committed in a single transaction!
             using (var trans = session.BeginTransaction())
             {
-                int i = 0;
                 foreach (var detailEntry in detailList.VoteDetail)
                 {
-                    i++;
-
                     var mpDBE = BasicDBEHelper.GetMP(new MPDTO()
                     {
                         Chamber = Chambers.ChamberOfDeputees,
@@ -115,33 +111,13 @@ namespace ro.stancescu.CDep.ScraperLibrary
                             throw new UnexpectedPageContentException("Unknown vote type: «" + detailEntry.VoteCast + "»");
                     }
 
-                    VoteDetailDBE voteDetail;
-                    if (!newRecord)
-                    {
-                        voteDetail = session.
-                            QueryOver<VoteDetailDBE>().
-                            Where(vd => vd.Vote == detailList.Vote && vd.MP == mpDBE).
-                            List().
-                            FirstOrDefault();
-
-                        if (voteDetail != null)
-                        {
-                            if (voteDetail.PoliticalGroup.Id != politicalGroupDBE.Id || voteDetail.VoteCast != voteCast)
-                            {
-                                throw new InconsistentDatabaseStateException("VoteDetailDBE record #" + voteDetail.Id + " is inconsistent with the data currently scraped!");
-                            }
-                            continue;
-                        }
-                    }
-
-                    voteDetail = new VoteDetailDBE()
+                    session.Insert(new VoteDetailDBE()
                     {
                         Vote = detailList.Vote,
                         MP = mpDBE,
                         VoteCast = voteCast,
                         PoliticalGroup = politicalGroupDBE,
-                    };
-                    session.Insert(voteDetail);
+                    });
                 }
                 trans.Commit();
             }
