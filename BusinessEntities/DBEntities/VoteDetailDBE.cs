@@ -6,6 +6,14 @@ using System.Threading.Tasks;
 
 namespace ro.stancescu.CDep.BusinessEntities
 {
+    /// <summary>
+    /// The database entity which represents vote details.
+    /// </summary>
+    /// <remarks>
+    /// Each such entity represents a single plenary vote by a single <see cref="MPDBE"/>
+    /// on a single <see cref="VoteSummaryDBE"/>. Moreover, this entity also connects the MP to
+    /// his/her <see cref="PoliticalGroupDBE"/> at the time of their vote.
+    /// </remarks>
     public class VoteDetailDBE
     {
         public enum VoteCastType

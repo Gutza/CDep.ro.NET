@@ -58,14 +58,14 @@ namespace ro.stancescu.CDep.CDepWinIface
 
             while (currentYear <= DateTime.Now.Year || currentMonth <= DateTime.Now.Month)
             {
-                ParliamentarySessionParser.OnNetworkStart += NetworkStart;
-                ParliamentarySessionParser.OnNetworkStop += NetworkStop;
-                var dates = ParliamentarySessionParser.GetDates(currentYear, currentMonth);
+                DepParliamentarySessionParser.OnNetworkStart += NetworkStart;
+                DepParliamentarySessionParser.OnNetworkStop += NetworkStop;
+                var dates = DepParliamentarySessionParser.GetDates(currentYear, currentMonth);
 
-                SummaryProcessor.Init(sessionFactory);
-                SummaryProcessor.OnProgress += SummaryProgress;
-                SummaryProcessor.OnNetworkStart += NetworkStart;
-                SummaryProcessor.OnNetworkStop += NetworkStop;
+                DepSummaryProcessor.Init(sessionFactory);
+                DepSummaryProcessor.OnProgress += SummaryProgress;
+                DepSummaryProcessor.OnNetworkStart += NetworkStart;
+                DepSummaryProcessor.OnNetworkStop += NetworkStop;
                 int idx = 1;
                 foreach (var date in dates)
                 {
@@ -76,7 +76,7 @@ namespace ro.stancescu.CDep.CDepWinIface
                     }
                     toolStripStatusLabel1.Text = "Processing date " + date.ToString() + " (" + idx + "/" + dates.Count + ")";
                     Application.DoEvents();
-                    SummaryProcessor.Process(date);
+                    DepSummaryProcessor.Process(date);
                     idx++;
                 }
 
@@ -91,7 +91,7 @@ namespace ro.stancescu.CDep.CDepWinIface
             toolStripStatusLabel1.Text = "Idle";
         }
 
-        private void SummaryProgress(object sender, SummaryProcessor.ProgressEventArgs e)
+        private void SummaryProgress(object sender, DepSummaryProcessor.ProgressEventArgs e)
         {
             progressBar1.Value = (int)Math.Round(1000 * e.Progress);
             Application.DoEvents();
@@ -111,8 +111,11 @@ namespace ro.stancescu.CDep.CDepWinIface
 
         private void button1_Click(object sender, EventArgs e)
         {
-            var mpparser = new MPParser();
-            mpparser.Execute(sessionFactory);
+            SenateProcessor.Init(sessionFactory);
+            var senateProcessor = new SenateProcessor();
+            senateProcessor.Execute();
+            //var mpparser = new MPParser();
+            //mpparser.Execute(sessionFactory);
         }
     }
 }

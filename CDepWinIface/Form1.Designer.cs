@@ -46,7 +46,7 @@
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(260, 23);
             this.button2.TabIndex = 4;
-            this.button2.Text = "Generate database";
+            this.button2.Text = "DELETE and generate database";
             this.button2.UseVisualStyleBackColor = true;
             this.button2.Click += new System.EventHandler(this.DBCreate);
             // 
@@ -56,7 +56,7 @@
             this.button5.Name = "button5";
             this.button5.Size = new System.Drawing.Size(260, 23);
             this.button5.TabIndex = 1;
-            this.button5.Text = "Get all data";
+            this.button5.Text = "Scrape the Chamber of Deputees website";
             this.button5.UseVisualStyleBackColor = true;
             this.button5.Click += new System.EventHandler(this.button5_Click);
             // 
@@ -64,7 +64,7 @@
             // 
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripStatusLabel1});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 151);
+            this.statusStrip1.Location = new System.Drawing.Point(0, 132);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.Size = new System.Drawing.Size(284, 22);
             this.statusStrip1.TabIndex = 5;
@@ -80,7 +80,7 @@
             // 
             this.progressBar1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.progressBar1.Location = new System.Drawing.Point(12, 70);
+            this.progressBar1.Location = new System.Drawing.Point(13, 99);
             this.progressBar1.Name = "progressBar1";
             this.progressBar1.Size = new System.Drawing.Size(230, 23);
             this.progressBar1.TabIndex = 6;
@@ -89,7 +89,7 @@
             // 
             this.networkPanel.BackColor = System.Drawing.Color.White;
             this.networkPanel.Controls.Add(this.label1);
-            this.networkPanel.Location = new System.Drawing.Point(248, 69);
+            this.networkPanel.Location = new System.Drawing.Point(249, 98);
             this.networkPanel.Name = "networkPanel";
             this.networkPanel.Size = new System.Drawing.Size(24, 24);
             this.networkPanel.TabIndex = 7;
@@ -106,11 +106,11 @@
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(13, 100);
+            this.button1.Location = new System.Drawing.Point(13, 70);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(259, 23);
             this.button1.TabIndex = 8;
-            this.button1.Text = "button1";
+            this.button1.Text = "Scrape the Senate website (DEV!)";
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
@@ -119,7 +119,7 @@
             this.AcceptButton = this.button5;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(284, 173);
+            this.ClientSize = new System.Drawing.Size(284, 154);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.networkPanel);
             this.Controls.Add(this.progressBar1);

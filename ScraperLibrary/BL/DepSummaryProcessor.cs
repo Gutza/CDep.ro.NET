@@ -5,14 +5,14 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading.Tasks;
 using System.Xml.Serialization;
 
 namespace ro.stancescu.CDep.ScraperLibrary
 {
-    public class SummaryProcessor
+    public class DepSummaryProcessor
     {
         private const string URI_FORMAT = "http://www.cdep.ro/pls/steno/evot2015.xml?par1=1&par2={0}";
-        static WebClient web = null;
         static ISessionFactory GlobalSessionFactory;
 
         public static event EventHandler<ProgressEventArgs> OnProgress;
@@ -59,33 +59,23 @@ namespace ro.stancescu.CDep.ScraperLibrary
         public static void Init(ISessionFactory session)
         {
             GlobalSessionFactory = session;
-            DetailProcessor.OnNetworkStart += StartNetwork;
-            DetailProcessor.OnNetworkStop += StopNetwork;
+            DepDetailProcessor.OnNetworkStart += StartNetwork;
+            DepDetailProcessor.OnNetworkStop += StopNetwork;
         }
 
         public static void Process(DateTime date)
         {
             var url = String.Format(URI_FORMAT, date.Year + date.Month.ToString("D2") + date.Day.ToString("D2"));
 
-            if (web == null)
-            {
-                web = new WebClient();
-            }
-
             StartNetwork();
-            var webStream = web.OpenRead(url);
-            VoteSummaryCollectionDIO summaryData;
-            using (var summaryReader = new StreamReader(webStream, Encoding.GetEncoding("ISO-8859-2")))
-            {
-                if (summaryReader.EndOfStream)
-                {
-                    StopNetwork();
-                    return;
-                }
+            var scraper = new GenericXmlScraper<VoteSummaryCollectionDIO>(url);
 
-                XmlSerializer summarySerializer = new XmlSerializer(typeof(VoteSummaryCollectionDIO));
-                summaryData = (VoteSummaryCollectionDIO)summarySerializer.Deserialize(summaryReader);
+            var summaryData = Task.Run(() => scraper.GetDocument()).Result;
+            if (summaryData == null)
+            {
+                return;
             }
+
             StopNetwork();
             summaryData.VoteDate = date;
             ProcessData(summaryData);
@@ -96,16 +86,24 @@ namespace ro.stancescu.CDep.ScraperLibrary
             using (var sess = GlobalSessionFactory.OpenStatelessSession())
             {
                 int idx = 0;
-                var parliamentaryDay = sess.QueryOver<ParliamentaryDayDBE>().Where(ps => ps.Date == summaryList.VoteDate).List().FirstOrDefault();
+                var parliamentaryDay = sess.
+                    QueryOver<ParliamentaryDayDBE>().
+                    Where(ps => ps.Date == summaryList.VoteDate).
+                    List().
+                    FirstOrDefault();
+
                 if (parliamentaryDay != null && parliamentaryDay.ProcessingComplete)
                 {
                     return;
                 }
+
                 if (parliamentaryDay == null)
                 {
                     parliamentaryDay = new ParliamentaryDayDBE()
                     {
                         Date = summaryList.VoteDate,
+                        Chamber = Chambers.ChamberOfDeputees,
+                        ProcessingComplete = false,
                     };
                     sess.Insert(parliamentaryDay);
                 }
@@ -117,9 +115,10 @@ namespace ro.stancescu.CDep.ScraperLibrary
                         Progress = ((float)idx) / summaryList.VoteSummary.Count,
                     });
                     idx++;
+                    VoteSummaryDBE voteSummary;
                     using (var trans = sess.BeginTransaction())
                     {
-                        var voteSummary = sess.
+                        voteSummary = sess.
                             QueryOver<VoteSummaryDBE>().
                             Where(vs => vs.VoteIDCDep == summaryEntry.VoteId).
                             List().
@@ -130,7 +129,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
                             // Already processed
                             trans.Commit();
 
-                            DetailProcessor.Process(voteSummary, sess, false);
+                            DepDetailProcessor.Process(voteSummary, sess, false);
                             continue;
                         }
 
@@ -138,7 +137,6 @@ namespace ro.stancescu.CDep.ScraperLibrary
                         {
                             VoteIDCDep = summaryEntry.VoteId,
                             ParliamentaryDay = parliamentaryDay,
-                            Chamber = summaryEntry.Chamber,
                             CountAbstentions = summaryEntry.CountAbstentions,
                             CountHaveNotVoted = summaryEntry.CountHaveNotVoted,
                             CountPresent = summaryEntry.CountPresent,
@@ -151,9 +149,8 @@ namespace ro.stancescu.CDep.ScraperLibrary
                         sess.Insert(voteSummary);
 
                         trans.Commit();
-
-                        DetailProcessor.Process(voteSummary, sess, true);
                     }
+                    DepDetailProcessor.Process(voteSummary, sess, true);
                 }
 
                 using (var trans = sess.BeginTransaction())

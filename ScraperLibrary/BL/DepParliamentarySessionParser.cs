@@ -6,7 +6,7 @@ using System.Text;
 
 namespace ro.stancescu.CDep.ScraperLibrary
 {
-    public class ParliamentarySessionParser
+    public class DepParliamentarySessionParser
     {
         public static event EventHandler OnNetworkStart;
         public static event EventHandler OnNetworkStop;
