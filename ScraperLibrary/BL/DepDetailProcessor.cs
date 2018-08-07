@@ -66,6 +66,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
             }
         }
 
+        // TODO: Reconsider whether we actually want to throw exceptions here -- maybe log errors instead?
         /// <summary>
         /// Persists <see cref="VoteDetailCollectionDIO"/> entities.
         /// </summary>
@@ -75,6 +76,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
         /// <exception cref="InconsistentDatabaseStateException">Thrown if <see cref="VoteDetailDBE"/> entities in the database are inconsistent with the data being scraped.</exception>
         public static void ProcessData(VoteDetailCollectionDIO detailList, IStatelessSession session, bool newRecord)
         {
+            // TODO: All these checks for previous votes are useless, because all detail entries are committed in a single transaction!
             using (var trans = session.BeginTransaction())
             {
                 int i = 0;

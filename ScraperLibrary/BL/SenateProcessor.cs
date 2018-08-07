@@ -165,6 +165,8 @@ namespace ro.stancescu.CDep.ScraperLibrary
             Console.WriteLine("Finished processing the Senate data.");
         }
 
+        // TODO: Reconsider whether we actually want to throw exceptions here -- maybe log errors instead?
+        /// <exception cref="InconsistentDatabaseStateException">Thrown if <see cref="VoteDetailDBE"/> entities in the database are inconsistent with the data being scraped.</exception>
         private void ProcessVoteDescription(IDocument doc, SenateVoteSummaryDTO voteSummaryDTO, VoteSummaryDBE voteSummaryDBE, bool newVote, IStatelessSession sess)
         {
             List<SenateVoteDTO> voteDTOs = null;
@@ -189,6 +191,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
                 return;
             }
 
+            // TODO: All these checks for previous votes are useless, because all detail entries are committed in a single transaction!
             using (var trans = sess.BeginTransaction())
             {
                 foreach (var voteDTO in voteDTOs)
@@ -205,6 +208,11 @@ namespace ro.stancescu.CDep.ScraperLibrary
                         LastName = voteDTO.LastName,
                     }, sess);
 
+                    var politicalGroupDBE = BasicDBEHelper.GetPoliticalGroup(new PoliticalGroupDTO()
+                    {
+                        Name = voteDTO.PoliticalGroup
+                    }, sess);
+
                     VoteDetailDBE voteDetailDBE = null;
                     if (!newVote)
                     {
@@ -216,28 +224,24 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
                         if (voteDetailDBE != null)
                         {
-                            // TODO: Also check if we have the same vote cast, and the same political group as the ones in the database
-                            // TODO: Also check the same for CDep
-                            // Already saved
+                            if (voteDetailDBE.PoliticalGroup.Id!=politicalGroupDBE.Id || voteDetailDBE.VoteCast!=voteDTO.Vote)
+                            {
+                                throw new InconsistentDatabaseStateException("VoteDetailDBE record #" + voteDetailDBE.Id + " is inconsistent with the data currently scraped!");
+                            }
                             continue;
                         }
                     }
-
-                    var politicalGroupDBE = BasicDBEHelper.GetPoliticalGroup(new PoliticalGroupDTO()
-                    {
-                        Name = voteDTO.PoliticalGroup
-                    }, sess);
 
                     voteDetailDBE = new VoteDetailDBE()
                     {
                         VoteCast = voteDTO.Vote,
                         Vote = voteSummaryDBE,
-                        MP = mp, // TODO: Fill this in beforehand!
-                        PoliticalGroup = null, // TODO: Fill this in beforehand!
+                        MP = mp,
+                        PoliticalGroup = politicalGroupDBE,
                     };
                     sess.Insert(voteDetailDBE);
-
                 }
+                trans.Commit();
             }
         }
 
