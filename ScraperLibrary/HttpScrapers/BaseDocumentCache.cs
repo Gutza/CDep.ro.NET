@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 
 namespace ro.stancescu.CDep.ScraperLibrary
 {
+    // TODO: Make it so that the cache mode is static/global/singleton, in order to ensure we're not hitting the cache when retrieving recent stuff (current month/day).
     internal enum CacheModes
     {
         InvalidCacheMode = 0,

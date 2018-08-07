@@ -128,7 +128,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
                                         VoteIDCDep = 0, // TODO: Refactor this to persist the URL
                                         ProcessingComplete = false,
                                     };
-                                    sess.Insert(voteSummaryDTO);
+                                    sess.Insert(voteSummaryDBE);
                                     newVote = true;
                                 }
                                 trans.Commit();
