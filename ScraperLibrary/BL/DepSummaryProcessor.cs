@@ -10,6 +10,10 @@ using System.Xml.Serialization;
 
 namespace ro.stancescu.CDep.ScraperLibrary
 {
+    // TODO: Fix ISO-8859-2 to UTF8 for both this and the detail processor (votesummary.description and mp.fname, and mp.lname)
+    // TODO: Collect all global TODOs in a single separate document
+    // TODO: Write a meaningful NLog.config.sample document
+    // TODO: Write a meaningful hibernate.cfg.xml.sample document, and remove the current hibernate.cfg.xml sample from the repository
     public class DepSummaryProcessor
     {
         private const string URI_FORMAT = "http://www.cdep.ro/pls/steno/evot2015.xml?par1=1&par2={0}";
