@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using System.Xml.Serialization;
 
 namespace ro.stancescu.CDep.ScraperLibrary
@@ -56,12 +57,13 @@ namespace ro.stancescu.CDep.ScraperLibrary
                 var pageTask = httpClient.GetAsync(Url);
                 pageTask.Wait();
                 var pageContent = pageTask.Result.Content.ReadAsStringAsync();
+                var encoding = Encoding.GetEncoding(pageTask.Result.Content.Headers.ContentType.CharSet);
                 pageContent.Wait();
                 CurrentXmlString = pageContent.Result;
 
                 try
                 {
-                    result = DocFromStream(new StringReader(CurrentXmlString));
+                    result = DocFromStream(CurrentXmlString, encoding);
                 }
                 catch
                 {
@@ -76,10 +78,14 @@ namespace ro.stancescu.CDep.ScraperLibrary
             return result;
         }
 
-        private T DocFromStream(TextReader stream)
+        private T DocFromStream(string xml, Encoding encoding)
         {
+            XDocument xmlDoc = XDocument.Parse(xml);
+            var xmlString = xmlDoc.ToString();
+            CurrentXmlString = @"<?xml version=""1.0"" encoding=""utf-8""?>" + Environment.NewLine + xmlString;
+
             XmlSerializer serializer = new XmlSerializer(typeof(T));
-            return (T)serializer.Deserialize(stream);
+            return (T)serializer.Deserialize(new StringReader(CurrentXmlString));
         }
 
         private T DocFromStream(Stream stream)

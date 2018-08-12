@@ -119,7 +119,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
         protected string ResolveUrlToCacheKey(string url)
         {
-            var invalid = System.IO.Path.GetInvalidFileNameChars();
+            var invalid = Path.GetInvalidFileNameChars();
             var cacheId = url.Replace('/', '!').Replace(':', '.').Replace('?', '@');
             foreach (char invalidChar in invalid)
             {
