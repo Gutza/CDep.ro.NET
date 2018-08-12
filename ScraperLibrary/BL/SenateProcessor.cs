@@ -1,6 +1,6 @@
 ﻿using AngleSharp.Dom;
 using AngleSharp.Dom.Html;
-using NHibernate;
+using MongoDB.Driver;
 using NLog;
 using ro.stancescu.CDep.BusinessEntities;
 using System;
@@ -18,12 +18,6 @@ namespace ro.stancescu.CDep.ScraperLibrary
     public class SenateProcessor
     {
         private const string UNKNOWN_POLITICAL_GROUP = "[unknown]";
-        private static ISessionFactory GlobalSessionFactory;
-
-        public static void Init(ISessionFactory session)
-        {
-            GlobalSessionFactory = session;
-        }
 
         public void Execute()
         {
@@ -74,118 +68,82 @@ namespace ro.stancescu.CDep.ScraperLibrary
                 Console.WriteLine("There are no vote summaries for date " + currentDate.ToShortDateString());
             }
 
-            ParliamentaryDayDBE dayDBE;
-            using (var sess = GlobalSessionFactory.OpenStatelessSession())
+            var dayDBE = ParliamentaryDayDAO.GetDay(Chambers.Senate, currentDate);
+
+            if (dayDBE != null && dayDBE.ProcessingComplete)
             {
-                using (var trans = sess.BeginTransaction())
-                {
-                    dayDBE = sess.
-                        QueryOver<ParliamentaryDayDBE>().
-                        Where(pd => pd.Chamber == Chambers.Senate && pd.Date == currentDate).
-                        List().
-                        FirstOrDefault();
-
-                    if (dayDBE != null && dayDBE.ProcessingComplete)
-                    {
-                        // Skip it if it was already processed.
-                        return;
-                    }
-
-                    if (dayDBE == null)
-                    {
-                        dayDBE = new ParliamentaryDayDBE()
-                        {
-                            Chamber = Chambers.Senate,
-                            Date = currentDate,
-                            ProcessingComplete = false,
-                        };
-                        sess.Insert(dayDBE);
-                    }
-
-                    trans.Commit();
-                }
+                // Skip it if it was already processed.
+                return;
             }
 
-            using (var sess = GlobalSessionFactory.OpenStatelessSession())
+            if (dayDBE == null)
             {
-                foreach (var voteSummaryDTO in voteSummaryDTOs)
+                dayDBE = new ParliamentaryDayDBE()
                 {
-                    VoteSummaryDBE voteSummaryDBE = null;
-                    bool newVote = false;
-                    using (var trans = sess.BeginTransaction())
-                    {
-                        voteSummaryDBE = sess.
-                            QueryOver<VoteSummaryDBE>().
-                            Where(vs => vs.ParliamentaryDay == dayDBE).
-                            List().
-                            FirstOrDefault();
-
-                        if (voteSummaryDBE != null && voteSummaryDBE.ProcessingComplete)
-                        {
-                            // Skip if already processed.
-                            continue;
-                        }
-
-                        if (voteSummaryDBE == null)
-                        {
-                            voteSummaryDBE = new VoteSummaryDBE()
-                            {
-                                ParliamentaryDay = dayDBE,
-                                Description = voteSummaryDTO.VoteDescription,
-                                VoteTime = voteSummaryDTO.VoteTime,
-                                CountVotesYes = voteSummaryDTO.CountFor,
-                                CountVotesNo = voteSummaryDTO.CountAgainst,
-                                CountAbstentions = voteSummaryDTO.CountAbstained,
-                                CountHaveNotVoted = voteSummaryDTO.CountNotVoted,
-                                CountPresent = voteSummaryDTO.CountPresent,
-                                VoteIDCDep = 0, // TODO: Refactor this to persist the URL
-                                ProcessingComplete = false,
-                            };
-                            sess.Insert(voteSummaryDBE);
-                            newVote = true;
-                        }
-                        trans.Commit();
-                    }
-
-                    if (!string.IsNullOrEmpty(voteSummaryDTO.VoteNameUri))
-                    {
-                        Console.WriteLine("Processing vote name page in date " + currentDate.ToShortDateString() + " with url «" + voteSummaryDTO.VoteNameUri + "»");
-                        var scraper = new GenericHtmlScraper(voteSummaryDTO.VoteNameUri);
-                        var doc = scraper.GetDocument();
-                        ProcessVoteName(doc, dayDBE, sess);
-                    }
-
-                    if (!string.IsNullOrEmpty(voteSummaryDTO.VoteDescriptionUri))
-                    {
-                        Console.WriteLine("Processing vote description page in date " + currentDate.ToShortDateString() + " with url «" + voteSummaryDTO.VoteDescriptionUri + "»");
-                        var scraper = new GenericHtmlScraper(voteSummaryDTO.VoteDescriptionUri);
-                        var doc = scraper.GetDocument();
-                        ProcessVoteDescription(doc, voteSummaryDTO, voteSummaryDBE, newVote, sess);
-                    }
-
-                    using (var trans = sess.BeginTransaction())
-                    {
-                        voteSummaryDBE.ProcessingComplete = true;
-                        sess.Update(voteSummaryDBE);
-                        trans.Commit();
-                    }
-                }
+                    Chamber = Chambers.Senate,
+                    Date = currentDate,
+                    ProcessingComplete = false,
+                };
+                ParliamentaryDayDAO.GetCollection().InsertOne(dayDBE);
             }
 
-            using (var sess = GlobalSessionFactory.OpenStatelessSession())
+            foreach (var voteSummaryDTO in voteSummaryDTOs)
             {
-                using (var trans = sess.BeginTransaction())
+                bool newVote = false;
+                VoteSummaryDBE voteSummaryDBE = VoteSummaryDAO.GetByParliamentaryDay(dayDBE);
+
+                if (voteSummaryDBE != null && voteSummaryDBE.ProcessingComplete)
                 {
-                    dayDBE.ProcessingComplete = true;
-                    sess.Update(dayDBE);
-                    trans.Commit();
+                    // Skip if already processed.
+                    continue;
                 }
+
+                if (voteSummaryDBE == null)
+                {
+                    voteSummaryDBE = new VoteSummaryDBE()
+                    {
+                        ParliamentaryDayId = dayDBE.Id,
+                        Description = voteSummaryDTO.VoteDescription,
+                        VoteTime = voteSummaryDTO.VoteTime,
+                        CountVotesYes = voteSummaryDTO.CountFor,
+                        CountVotesNo = voteSummaryDTO.CountAgainst,
+                        CountAbstentions = voteSummaryDTO.CountAbstained,
+                        CountHaveNotVoted = voteSummaryDTO.CountNotVoted,
+                        CountPresent = voteSummaryDTO.CountPresent,
+                        VoteIDCDep = 0, // TODO: Refactor this to persist the URL
+                        ProcessingComplete = false,
+                    };
+                    VoteSummaryDAO.Insert(voteSummaryDBE);
+                    newVote = true;
+                }
+
+                if (!string.IsNullOrEmpty(voteSummaryDTO.VoteNameUri))
+                {
+                    Console.WriteLine("Processing vote name page in date " + currentDate.ToShortDateString() + " with url «" + voteSummaryDTO.VoteNameUri + "»");
+                    var scraper = new GenericHtmlScraper(voteSummaryDTO.VoteNameUri);
+                    var doc = scraper.GetDocument();
+                    ProcessVoteName(doc, dayDBE);
+                }
+
+                if (!string.IsNullOrEmpty(voteSummaryDTO.VoteDescriptionUri))
+                {
+                    Console.WriteLine("Processing vote description page in date " + currentDate.ToShortDateString() + " with url «" + voteSummaryDTO.VoteDescriptionUri + "»");
+                    var scraper = new GenericHtmlScraper(voteSummaryDTO.VoteDescriptionUri);
+                    var doc = scraper.GetDocument();
+                    ProcessVoteDescription(doc, voteSummaryDTO, voteSummaryDBE, newVote);
+                }
+
+                voteSummaryDBE.ProcessingComplete = true;
+                VoteSummaryDAO.Update(voteSummaryDBE);
             }
+            
+            dayDBE.ProcessingComplete = true;
+            ParliamentaryDayDAO.Update(dayDBE);
         }
 
         // TODO: Reconsider whether we actually want to throw exceptions here -- maybe log errors instead?
         /// <exception cref="InconsistentDatabaseStateException">Thrown if <see cref="VoteDetailDBE"/> entities in the database are inconsistent with the data being scraped.</exception>
-        private void ProcessVoteDescription(IDocument doc, SenateVoteSummaryDTO voteSummaryDTO, VoteSummaryDBE voteSummaryDBE, bool newVote, IStatelessSession sess)
+        private void ProcessVoteDescription(IDocument doc, SenateVoteSummaryDTO voteSummaryDTO, VoteSummaryDBE voteSummaryDBE, bool newVote)
         {
             List<SenateVoteDTO> voteDTOs = null;
             try
@@ -209,40 +167,36 @@ namespace ro.stancescu.CDep.ScraperLibrary
                 return;
             }
 
-            using (var trans = sess.BeginTransaction())
+            foreach (var voteDTO in voteDTOs)
             {
-                foreach (var voteDTO in voteDTOs)
+                if (voteDTO.PoliticalGroup == null)
                 {
-                    if (voteDTO.PoliticalGroup == null)
-                    {
-                        voteDTO.PoliticalGroup = UNKNOWN_POLITICAL_GROUP;
-                    }
-
-                    var mp = BasicDBEHelper.GetMP(new MPDTO()
-                    {
-                        Chamber = Chambers.Senate,
-                        FirstName = voteDTO.FirstName,
-                        LastName = voteDTO.LastName,
-                    }, sess);
-
-                    var politicalGroupDBE = BasicDBEHelper.GetPoliticalGroup(new PoliticalGroupDTO()
-                    {
-                        Name = voteDTO.PoliticalGroup
-                    }, sess);
-
-                    sess.Insert(new VoteDetailDBE()
-                    {
-                        VoteCast = voteDTO.Vote,
-                        Vote = voteSummaryDBE,
-                        MP = mp,
-                        PoliticalGroup = politicalGroupDBE,
-                    });
+                    voteDTO.PoliticalGroup = UNKNOWN_POLITICAL_GROUP;
                 }
-                trans.Commit();
+
+                var mp = BasicDBEHelper.GetMP(new MPDTO()
+                {
+                    Chamber = Chambers.Senate,
+                    FirstName = voteDTO.FirstName,
+                    LastName = voteDTO.LastName,
+                });
+
+                var politicalGroupDBE = BasicDBEHelper.GetPoliticalGroup(new PoliticalGroupDTO()
+                {
+                    Name = voteDTO.PoliticalGroup
+                });
+
+                VoteDetailDAO.Insert(new VoteDetailDBE()
+                {
+                    VoteCast = voteDTO.Vote,
+                    VoteId = voteSummaryDBE.Id,
+                    MPId = mp.Id,
+                    PoliticalGroupId = politicalGroupDBE.Id,
+                });
             }
         }
 
-        private void ProcessVoteName(IDocument doc, ParliamentaryDayDBE dayDBE, IStatelessSession sess)
+        private void ProcessVoteName(IDocument doc, ParliamentaryDayDBE dayDBE)
         {
             // TODO: Implement this at a later date, if needed
         }

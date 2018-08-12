@@ -1,5 +1,4 @@
 ﻿using AngleSharp.Parser.Html;
-using NHibernate;
 using ro.stancescu.CDep.BusinessEntities;
 using System;
 using System.Collections.Generic;
@@ -15,7 +14,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
     {
         private WebClient web;
 
-        public void Execute(ISessionFactory sessionFactory)
+        public void Execute()
         {
             if (web == null)
             {
@@ -49,15 +48,12 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
             var mpLinkList = mainDiv.QuerySelectorAll("tr td:nth-child(2) a");
 
-            var session = sessionFactory.OpenSession();
-            using (var trans = session.BeginTransaction()) {
-                foreach (var anchor in mpLinkList)
-                {
-                    var name = anchor.TextContent;
-                    var href = anchor.Attributes["href"].Value;
+            foreach (var anchor in mpLinkList)
+            {
+                var name = anchor.TextContent;
+                var href = anchor.Attributes["href"].Value;
 
-                    //var MP = session.QueryOver<MPDBE>().Where(mp => mp.FirstName + " " + mp.LastName == name).List().FirstOrDefault();
-                }
+                //var MP = session.QueryOver<MPDBE>().Where(mp => mp.FirstName + " " + mp.LastName == name).List().FirstOrDefault();
             }
         }
     }

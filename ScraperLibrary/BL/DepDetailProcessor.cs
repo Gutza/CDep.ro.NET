@@ -1,5 +1,4 @@
-﻿using NHibernate;
-using ro.stancescu.CDep.BusinessEntities;
+﻿using ro.stancescu.CDep.BusinessEntities;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -40,7 +39,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
         }
         #endregion UI Event Handlers
 
-        public static void Process(VoteSummaryDBE voteSummary, IStatelessSession session, bool newRecord)
+        public static void Process(VoteSummaryDBE voteSummary, bool newRecord)
         {
             if (voteSummary.ProcessingComplete)
             {
@@ -57,13 +56,10 @@ namespace ro.stancescu.CDep.ScraperLibrary
             {
                 return;
             }
-            ProcessData(detailData, session, newRecord);
-            using (var trans = session.BeginTransaction())
-            {
-                voteSummary.ProcessingComplete = true;
-                session.Update(voteSummary);
-                trans.Commit();
-            }
+            detailData.Vote = voteSummary;
+            ProcessData(detailData, newRecord);
+            voteSummary.ProcessingComplete = true;
+            VoteSummaryDAO.Update(voteSummary);
         }
 
         // TODO: Reconsider whether we actually want to throw exceptions here -- maybe log errors instead?
@@ -74,52 +70,48 @@ namespace ro.stancescu.CDep.ScraperLibrary
         /// <param name="session">The current database session.</param>
         /// <param name="newRecord">True if this is guaranteed to be a new record, false otherwise.</param>
         /// <exception cref="InconsistentDatabaseStateException">Thrown if <see cref="VoteDetailDBE"/> entities in the database are inconsistent with the data being scraped.</exception>
-        public static void ProcessData(VoteDetailCollectionDIO detailList, IStatelessSession session, bool newRecord)
+        public static void ProcessData(VoteDetailCollectionDIO detailList, bool newRecord)
         {
-            using (var trans = session.BeginTransaction())
+            foreach (var detailEntry in detailList.VoteDetail)
             {
-                foreach (var detailEntry in detailList.VoteDetail)
+                var mpDBE = BasicDBEHelper.GetMP(new MPDTO()
                 {
-                    var mpDBE = BasicDBEHelper.GetMP(new MPDTO()
-                    {
-                        Chamber = Chambers.ChamberOfDeputees,
-                        FirstName = detailEntry.FirstName,
-                        LastName = detailEntry.LastName,
-                    }, session);
+                    Chamber = Chambers.ChamberOfDeputees,
+                    FirstName = detailEntry.FirstName,
+                    LastName = detailEntry.LastName,
+                });
 
-                    PoliticalGroupDBE politicalGroupDBE = BasicDBEHelper.GetPoliticalGroup(new PoliticalGroupDTO()
-                    {
-                        Name = detailEntry.PoliticalGroup,
-                    }, session);
+                PoliticalGroupDBE politicalGroupDBE = BasicDBEHelper.GetPoliticalGroup(new PoliticalGroupDTO()
+                {
+                    Name = detailEntry.PoliticalGroup,
+                });
 
-                    VoteDetailDBE.VoteCastType voteCast;
-                    switch (detailEntry.VoteCast)
-                    {
-                        case "DA":
-                            voteCast = VoteDetailDBE.VoteCastType.VotedFor;
-                            break;
-                        case "NU":
-                            voteCast = VoteDetailDBE.VoteCastType.VotedAgainst;
-                            break;
-                        case "AB":
-                            voteCast = VoteDetailDBE.VoteCastType.Abstained;
-                            break;
-                        case "-":
-                            voteCast = VoteDetailDBE.VoteCastType.VotedNone;
-                            break;
-                        default:
-                            throw new UnexpectedPageContentException("Unknown vote type: «" + detailEntry.VoteCast + "»");
-                    }
-
-                    session.Insert(new VoteDetailDBE()
-                    {
-                        Vote = detailList.Vote,
-                        MP = mpDBE,
-                        VoteCast = voteCast,
-                        PoliticalGroup = politicalGroupDBE,
-                    });
+                VoteDetailDBE.VoteCastType voteCast;
+                switch (detailEntry.VoteCast)
+                {
+                    case "DA":
+                        voteCast = VoteDetailDBE.VoteCastType.VotedFor;
+                        break;
+                    case "NU":
+                        voteCast = VoteDetailDBE.VoteCastType.VotedAgainst;
+                        break;
+                    case "AB":
+                        voteCast = VoteDetailDBE.VoteCastType.Abstained;
+                        break;
+                    case "-":
+                        voteCast = VoteDetailDBE.VoteCastType.VotedNone;
+                        break;
+                    default:
+                        throw new UnexpectedPageContentException("Unknown vote type: «" + detailEntry.VoteCast + "»");
                 }
-                trans.Commit();
+
+                VoteDetailDAO.Insert(new VoteDetailDBE()
+                {
+                    VoteId = detailList.Vote.Id,
+                    MPId = mpDBE.Id,
+                    VoteCast = voteCast,
+                    PoliticalGroupId = politicalGroupDBE.Id,
+                });
             }
         }
     }

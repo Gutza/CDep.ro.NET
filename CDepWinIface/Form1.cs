@@ -1,9 +1,5 @@
-﻿using FluentNHibernate.Cfg;
-using NHibernate;
-using NHibernate.Cfg;
-using NHibernate.Tool.hbm2ddl;
+﻿using MongoDB.Driver;
 using ro.stancescu.CDep.BusinessEntities;
-using ro.stancescu.CDep.BusinessEntities.DBMapping;
 using ro.stancescu.CDep.ScraperLibrary;
 using System;
 using System.Collections.Generic;
@@ -23,9 +19,6 @@ namespace ro.stancescu.CDep.CDepWinIface
 {
     public partial class Form1 : Form
     {
-        Configuration dbCfg;
-        ISessionFactory sessionFactory;
-
         public Form1()
         {
             InitializeComponent();
@@ -33,18 +26,16 @@ namespace ro.stancescu.CDep.CDepWinIface
         }
         private void InitDB()
         {
-            dbCfg = new Configuration();
-            dbCfg.Configure();
-            dbCfg = Fluently.Configure(dbCfg)
-                .Mappings(m => m.FluentMappings.AddFromAssemblyOf<MPMapping>()).BuildConfiguration();
-            dbCfg.AddAssembly("ro.stancescu.CDep.BusinessEntities");
-            sessionFactory = dbCfg.BuildSessionFactory();
+            // TODO: Soft-code these
+            var connectionString = "mongodb://localhost:27017";
+
+            var client = new MongoClient(connectionString);
+
+            HelperDAO.DBConnection = client.GetDatabase("RoParliament");
         }
 
         private void DBCreate(object sender, EventArgs e)
         {
-            var schema = new SchemaExport(dbCfg);
-            schema.Create(true, true);
         }
 
         private void button5_Click(object sender, EventArgs e)
@@ -62,7 +53,7 @@ namespace ro.stancescu.CDep.CDepWinIface
                 DepParliamentarySessionParser.OnNetworkStop += NetworkStop;
                 var dates = DepParliamentarySessionParser.GetDates(currentYear, currentMonth);
 
-                DepSummaryProcessor.Init(sessionFactory);
+                DepSummaryProcessor.Init();
                 DepSummaryProcessor.OnProgress += SummaryProgress;
                 DepSummaryProcessor.OnNetworkStart += NetworkStart;
                 DepSummaryProcessor.OnNetworkStop += NetworkStop;
@@ -111,7 +102,6 @@ namespace ro.stancescu.CDep.CDepWinIface
 
         private void button1_Click(object sender, EventArgs e)
         {
-            SenateProcessor.Init(sessionFactory);
             var senateProcessor = new SenateProcessor();
             senateProcessor.Execute();
             //var mpparser = new MPParser();

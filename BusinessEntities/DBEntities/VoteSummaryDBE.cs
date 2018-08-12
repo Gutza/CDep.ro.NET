@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MongoDB.Bson;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -18,22 +19,26 @@ namespace ro.stancescu.CDep.BusinessEntities
     /// Vote summaries can be broken down into individual <see cref="VoteDetailDBE"/> entities,
     /// each of which represents a single vote by an <see cref="MPDBE"/>.
     /// </remarks>
-    public class VoteSummaryDBE
+    public class VoteSummaryDBE: BaseDBE
     {
-        public virtual int? Id { get; set; }
-        public virtual int VoteIDCDep { get; set; }
-        public virtual ParliamentaryDayDBE ParliamentaryDay { get; set; }
-        public virtual DateTime VoteTime { get; set; }
-        public virtual string Description { get; set; }
-        public virtual int CountPresent { get; set; }
+        public int VoteIDCDep;
 
-        public virtual int CountVotesYes { get; set; }
-        public virtual int CountVotesNo { get; set; }
-        public virtual int CountAbstentions { get; set; }
-        public virtual int CountHaveNotVoted { get; set; }
+        public ObjectId ParliamentaryDayId;
 
-        public virtual bool ProcessingComplete { get; set; }
+        public DateTime VoteTime;
 
-        public virtual ISet<VoteDetailDBE> Votes { get; set; }
+        public string Description;
+
+        public int CountPresent;
+
+        public int CountVotesYes;
+
+        public int CountVotesNo;
+
+        public int CountAbstentions;
+
+        public int CountHaveNotVoted;
+
+        public bool ProcessingComplete;
     }
 }

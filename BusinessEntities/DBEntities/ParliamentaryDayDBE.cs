@@ -1,4 +1,6 @@
-﻿using System;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,16 +16,13 @@ namespace ro.stancescu.CDep.BusinessEntities
     /// <see cref="VoteSummaryDBE"/> entities, each of which represents
     /// an individual plenary voting session which took place on that day.
     /// </remarks>
-    public class ParliamentaryDayDBE
+    public class ParliamentaryDayDBE: BaseDBE
     {
-        public virtual int? Id { get; set; }
+        public DateTime Date;
 
-        public virtual DateTime Date { get; set; }
+        [BsonRepresentation(BsonType.String)]
+        public Chambers Chamber;
 
-        public virtual Chambers Chamber { get; set; }
-
-        public virtual ISet<VoteSummaryDBE> VoteSummaries { get; set; }
-
-        public virtual bool ProcessingComplete { get; set; }
+        public bool ProcessingComplete;
     }
 }

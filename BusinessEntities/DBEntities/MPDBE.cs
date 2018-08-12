@@ -1,4 +1,6 @@
-﻿using System;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,16 +11,13 @@ namespace ro.stancescu.CDep.BusinessEntities
     /// <summary>
     /// The database entity which represents MPs.
     /// </summary>
-    public class MPDBE
+    public class MPDBE: BaseDBE
     {
-        public virtual int? Id { get; set; }
+        public string LastName;
 
-        public virtual string LastName { get; set; }
+        public string FirstName;
 
-        public virtual string FirstName { get; set; }
-
-        public virtual Chambers Chamber { get; set; }
-
-        public virtual ISet<VoteDetailDBE> VotesCast { get; set; }
+        [BsonRepresentation(BsonType.String)]
+        public Chambers Chamber;
     }
 }

@@ -1,4 +1,4 @@
-﻿using NHibernate;
+﻿using MongoDB.Driver;
 using ro.stancescu.CDep.BusinessEntities;
 using System;
 using System.IO;
@@ -17,7 +17,6 @@ namespace ro.stancescu.CDep.ScraperLibrary
     public class DepSummaryProcessor
     {
         private const string URI_FORMAT = "http://www.cdep.ro/pls/steno/evot2015.xml?par1=1&par2={0}";
-        static ISessionFactory GlobalSessionFactory;
 
         public static event EventHandler<ProgressEventArgs> OnProgress;
         public static event EventHandler OnNetworkStart;
@@ -60,9 +59,8 @@ namespace ro.stancescu.CDep.ScraperLibrary
         }
         #endregion UI Event Handlers
 
-        public static void Init(ISessionFactory session)
+        public static void Init()
         {
-            GlobalSessionFactory = session;
             DepDetailProcessor.OnNetworkStart += StartNetwork;
             DepDetailProcessor.OnNetworkStop += StopNetwork;
         }
@@ -87,82 +85,60 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
         private static void ProcessData(VoteSummaryCollectionDIO summaryList)
         {
-            using (var sess = GlobalSessionFactory.OpenStatelessSession())
+            int idx = 0;
+            var parliamentaryDay = ParliamentaryDayDAO.GetDay(Chambers.ChamberOfDeputees, summaryList.VoteDate);
+
+            if (parliamentaryDay != null && parliamentaryDay.ProcessingComplete)
             {
-                int idx = 0;
-                var parliamentaryDay = sess.
-                    QueryOver<ParliamentaryDayDBE>().
-                    Where(ps => ps.Date == summaryList.VoteDate).
-                    List().
-                    FirstOrDefault();
+                return;
+            }
 
-                if (parliamentaryDay != null && parliamentaryDay.ProcessingComplete)
+            if (parliamentaryDay == null)
+            {
+                parliamentaryDay = new ParliamentaryDayDBE()
                 {
-                    return;
+                    Date = summaryList.VoteDate,
+                    Chamber = Chambers.ChamberOfDeputees,
+                    ProcessingComplete = false,
+                };
+                ParliamentaryDayDAO.Insert(parliamentaryDay);
+            }
+
+            foreach (var summaryEntry in summaryList.VoteSummary)
+            {
+                UpdateProgress(new ProgressEventArgs()
+                {
+                    Progress = ((float)idx) / summaryList.VoteSummary.Count,
+                });
+                idx++;
+                VoteSummaryDBE voteSummary = VoteSummaryDAO.GetByVoteIdCDep(summaryEntry.VoteId);
+
+                if (voteSummary != null)
+                {
+                    // Already processed
+                    DepDetailProcessor.Process(voteSummary, false);
+                    continue;
                 }
 
-                if (parliamentaryDay == null)
+                voteSummary = new VoteSummaryDBE()
                 {
-                    parliamentaryDay = new ParliamentaryDayDBE()
-                    {
-                        Date = summaryList.VoteDate,
-                        Chamber = Chambers.ChamberOfDeputees,
-                        ProcessingComplete = false,
-                    };
-                    sess.Insert(parliamentaryDay);
-                }
+                    VoteIDCDep = summaryEntry.VoteId,
+                    ParliamentaryDayId = parliamentaryDay.Id,
+                    CountAbstentions = summaryEntry.CountAbstentions,
+                    CountHaveNotVoted = summaryEntry.CountHaveNotVoted,
+                    CountPresent = summaryEntry.CountPresent,
+                    CountVotesNo = summaryEntry.CountVotesNo,
+                    CountVotesYes = summaryEntry.CountVotesYes,
+                    Description = summaryEntry.Description,
+                    VoteTime = DateTime.ParseExact(summaryEntry.VoteTime, "dd.MM.yyyy HH:mm", null),
+                    ProcessingComplete = false,
+                };
+                VoteSummaryDAO.Insert(voteSummary);
 
-                foreach (var summaryEntry in summaryList.VoteSummary)
-                {
-                    UpdateProgress(new ProgressEventArgs()
-                    {
-                        Progress = ((float)idx) / summaryList.VoteSummary.Count,
-                    });
-                    idx++;
-                    VoteSummaryDBE voteSummary;
-                    using (var trans = sess.BeginTransaction())
-                    {
-                        voteSummary = sess.
-                            QueryOver<VoteSummaryDBE>().
-                            Where(vs => vs.VoteIDCDep == summaryEntry.VoteId).
-                            List().
-                            FirstOrDefault();
+                DepDetailProcessor.Process(voteSummary, true);
 
-                        if (voteSummary != null)
-                        {
-                            // Already processed
-                            trans.Commit();
-
-                            DepDetailProcessor.Process(voteSummary, sess, false);
-                            continue;
-                        }
-
-                        voteSummary = new VoteSummaryDBE()
-                        {
-                            VoteIDCDep = summaryEntry.VoteId,
-                            ParliamentaryDay = parliamentaryDay,
-                            CountAbstentions = summaryEntry.CountAbstentions,
-                            CountHaveNotVoted = summaryEntry.CountHaveNotVoted,
-                            CountPresent = summaryEntry.CountPresent,
-                            CountVotesNo = summaryEntry.CountVotesNo,
-                            CountVotesYes = summaryEntry.CountVotesYes,
-                            Description = summaryEntry.Description,
-                            VoteTime = DateTime.ParseExact(summaryEntry.VoteTime, "dd.MM.yyyy HH:mm", null),
-                            ProcessingComplete = false,
-                        };
-                        sess.Insert(voteSummary);
-
-                        trans.Commit();
-                    }
-                    DepDetailProcessor.Process(voteSummary, sess, true);
-                }
-
-                using (var trans = sess.BeginTransaction())
-                {
-                    parliamentaryDay.ProcessingComplete = true;
-                    sess.Update(parliamentaryDay);
-                    trans.Commit();
-                }
+                parliamentaryDay.ProcessingComplete = true;
+                ParliamentaryDayDAO.Update(parliamentaryDay);
             }
         }
     }

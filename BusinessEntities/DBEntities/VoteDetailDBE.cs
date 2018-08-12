@@ -1,4 +1,6 @@
-﻿using System;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,7 +16,7 @@ namespace ro.stancescu.CDep.BusinessEntities
     /// on a single <see cref="VoteSummaryDBE"/>. Moreover, this entity also connects the MP to
     /// his/her <see cref="PoliticalGroupDBE"/> at the time of their vote.
     /// </remarks>
-    public class VoteDetailDBE
+    public class VoteDetailDBE: BaseDBE
     {
         public enum VoteCastType
         {
@@ -25,14 +27,13 @@ namespace ro.stancescu.CDep.BusinessEntities
             VotedNone,
         }
 
-        public virtual UInt64? Id { get; set; }
+        public ObjectId VoteId;
 
-        public virtual VoteSummaryDBE Vote { get; set; }
+        public ObjectId MPId;
 
-        public virtual MPDBE MP {get; set;}
+        public ObjectId PoliticalGroupId;
 
-        public virtual PoliticalGroupDBE PoliticalGroup { get; set; }
-
-        public virtual VoteCastType VoteCast { get; set; }
+        [BsonRepresentation(BsonType.String)]
+        public VoteCastType VoteCast;
     }
 }

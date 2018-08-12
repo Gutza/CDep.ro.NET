@@ -15,13 +15,8 @@ namespace ro.stancescu.CDep.BusinessEntities
     /// the group of minorities contains a mix of representatives of the minority populations –
     /// they have no common political agenda, and shouldn't be treated as if they had one.
     /// </remarks>
-    public class PoliticalGroupDBE
+    public class PoliticalGroupDBE: BaseDBE
     {
-        public virtual int? Id { get; set; }
-
-        public virtual string Name { get; set; }
-
-        public virtual ISet<VoteDetailDBE> VotesCast { get; set; }
-
+        public string Name;
     }
 }

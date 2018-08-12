@@ -1,5 +1,4 @@
-﻿using NHibernate;
-using ro.stancescu.CDep.BusinessEntities;
+﻿using ro.stancescu.CDep.BusinessEntities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,18 +19,14 @@ namespace ro.stancescu.CDep.ScraperLibrary
         /// <param name="session">The database session.</param>
         /// <returns>The corresponding <see cref="MPDBE"/> entity.</returns>
         /// <remarks>Does not create a <see cref="NHibernate.Transaction"/>, it expects one is already open.</remarks>
-        internal static MPDBE GetMP(MPDTO mpDTO, IStatelessSession session)
+        internal static MPDBE GetMP(MPDTO mpDTO)
         {
             if (MPCache.ContainsKey(mpDTO))
             {
                 return MPCache[mpDTO];
             }
 
-            var mpDBE = session
-                .QueryOver<MPDBE>()
-                .Where(mp => mp.FirstName == mpDTO.FirstName && mp.LastName == mpDTO.LastName && mp.Chamber == mpDTO.Chamber)
-                .List()
-                .FirstOrDefault();
+            MPDBE mpDBE = MPDAO.GetByNameAndChamber(mpDTO.Chamber, mpDTO.FirstName, mpDTO.LastName);
 
             if (mpDBE != null)
             {
@@ -44,24 +39,21 @@ namespace ro.stancescu.CDep.ScraperLibrary
                 LastName = mpDTO.LastName,
                 Chamber = mpDTO.Chamber,
             };
-            session.Insert(mpDBE);
+            MPDAO.Insert(mpDBE);
             MPCache[mpDTO] = mpDBE;
 
             return mpDBE;
         }
 
-        internal static PoliticalGroupDBE GetPoliticalGroup(PoliticalGroupDTO politicalGroupDTO, IStatelessSession session)
+        internal static PoliticalGroupDBE GetPoliticalGroup(PoliticalGroupDTO politicalGroupDTO)
         {
             if (PGCache.ContainsKey(politicalGroupDTO))
             {
                 return PGCache[politicalGroupDTO];
             }
 
-            var politicalGroupDBE = session
-                .QueryOver<PoliticalGroupDBE>()
-                .Where(pg => pg.Name == politicalGroupDTO.Name)
-                .List()
-                .FirstOrDefault();
+            var politicalGroupDBE = PoliticalGroupDAO.GetByName(politicalGroupDTO.Name);
+
             if (politicalGroupDBE != null)
             {
                 return politicalGroupDBE;
@@ -71,7 +63,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
             {
                 Name = politicalGroupDTO.Name,
             };
-            session.Insert(politicalGroupDBE);
+            PoliticalGroupDAO.Insert(politicalGroupDBE);
 
             PGCache[politicalGroupDTO] = politicalGroupDBE;
             return politicalGroupDBE;
