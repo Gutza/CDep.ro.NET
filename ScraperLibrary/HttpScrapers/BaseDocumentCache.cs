@@ -65,7 +65,6 @@ namespace ro.stancescu.CDep.ScraperLibrary
         /// <returns></returns>
         protected abstract string GetBaseUrl();
 
-
         protected Stream GetCachedByKey(string cacheId)
         {
             if (!CacheDict[CacheMode].HasFlag(CacheTypes.Readable))

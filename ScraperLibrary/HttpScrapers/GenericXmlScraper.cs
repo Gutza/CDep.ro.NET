@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
@@ -51,16 +52,12 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
             for (int i = 0; i < RETRY_COUNT; i++)
             {
-                var webStream = new WebClient().OpenRead(Url);
-                using (var summaryReader = new StreamReader(webStream, Encoding.GetEncoding("ISO-8859-2")))
-                {
-                    if (summaryReader.EndOfStream)
-                    {
-                        return default(T);
-                    }
-
-                    CurrentXmlString = summaryReader.ReadToEnd();
-                }
+                var httpClient = new HttpClient();
+                var pageTask = httpClient.GetAsync(Url);
+                pageTask.Wait();
+                var pageContent = pageTask.Result.Content.ReadAsStringAsync();
+                pageContent.Wait();
+                CurrentXmlString = pageContent.Result;
 
                 try
                 {
