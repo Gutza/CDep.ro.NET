@@ -42,7 +42,6 @@ namespace ro.stancescu.CDep.BusinessEntities
             GetCollection().InsertOne(entity);
         }
 
-        // TODO: Use InsertMany() everywhere we used to rely on transactions to ensure consistency
         public static void InsertMany(IEnumerable<T> entities)
         {
             GetCollection().InsertMany(entities);

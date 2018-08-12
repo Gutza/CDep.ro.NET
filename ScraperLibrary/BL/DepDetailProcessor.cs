@@ -72,6 +72,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
         /// <exception cref="InconsistentDatabaseStateException">Thrown if <see cref="VoteDetailDBE"/> entities in the database are inconsistent with the data being scraped.</exception>
         public static void ProcessData(VoteDetailCollectionDIO detailList, bool newRecord)
         {
+            var voteDetailList = new List<VoteDetailDBE>();
             foreach (var detailEntry in detailList.VoteDetail)
             {
                 var mpDBE = BasicDBEHelper.GetMP(new MPDTO()
@@ -105,13 +106,18 @@ namespace ro.stancescu.CDep.ScraperLibrary
                         throw new UnexpectedPageContentException("Unknown vote type: «" + detailEntry.VoteCast + "»");
                 }
 
-                VoteDetailDAO.Insert(new VoteDetailDBE()
+                voteDetailList.Add(new VoteDetailDBE()
                 {
                     VoteId = detailList.Vote.Id,
                     MPId = mpDBE.Id,
                     VoteCast = voteCast,
                     PoliticalGroupId = politicalGroupDBE.Id,
                 });
+            }
+
+            if (voteDetailList.Count > 0)
+            {
+                VoteDetailDAO.InsertMany(voteDetailList);
             }
         }
     }

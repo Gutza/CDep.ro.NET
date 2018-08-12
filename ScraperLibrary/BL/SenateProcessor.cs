@@ -136,7 +136,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
                 voteSummaryDBE.ProcessingComplete = true;
                 VoteSummaryDAO.Update(voteSummaryDBE);
             }
-            
+
             dayDBE.ProcessingComplete = true;
             ParliamentaryDayDAO.Update(dayDBE);
         }
@@ -167,6 +167,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
                 return;
             }
 
+            var voteDetailList = new List<VoteDetailDBE>();
             foreach (var voteDTO in voteDTOs)
             {
                 if (voteDTO.PoliticalGroup == null)
@@ -186,13 +187,18 @@ namespace ro.stancescu.CDep.ScraperLibrary
                     Name = voteDTO.PoliticalGroup
                 });
 
-                VoteDetailDAO.Insert(new VoteDetailDBE()
+                voteDetailList.Add(new VoteDetailDBE()
                 {
                     VoteCast = voteDTO.Vote,
                     VoteId = voteSummaryDBE.Id,
                     MPId = mp.Id,
                     PoliticalGroupId = politicalGroupDBE.Id,
                 });
+            }
+
+            if (voteDetailList.Count > 0)
+            {
+                VoteDetailDAO.InsertMany(voteDetailList);
             }
         }
 
