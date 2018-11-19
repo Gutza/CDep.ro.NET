@@ -1,19 +1,10 @@
-﻿using AngleSharp;
-using AngleSharp.Css.Values;
+﻿using AngleSharp.Css.Values;
 using AngleSharp.Dom;
 using AngleSharp.Dom.Html;
-using AngleSharp.Network.Default;
-using AngleSharp.Parser.Html;
-using NLog;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Net;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using AngleSharp.Extensions;
 
 // TODO: Ignore cyan dates where color=Gray; example: 2007-09, look at the 3rd, and 6th
 // 2007-09-04 and 2007-10-04 are coincidentally both cyan, and both valid -- but you should never look at a different month
@@ -30,17 +21,17 @@ namespace ro.stancescu.CDep.ScraperLibrary
         private const string NUMBER_REGEX_PATTERN = @"^[0-9]+$";
         private static readonly Regex NumberRegex = new Regex(NUMBER_REGEX_PATTERN);
 
-        private static readonly List<string> VoteSummaryHeaderExpectedContents = new List<string>()
+        private static readonly List<List<string>> VoteSummaryHeaderExpectedContents = new List<List<string>>()
         {
-            "Ora",
-            "Denumire",
-            "Descriere",
-            "Rezoluție",
-            "Prezenți",
-            "Pentru",
-            "Împotrivă",
-            "Abţineri",
-            "Nu au votat",
+            new List<string>() { "Ora" },
+            new List<string>() { "Denumire" },
+            new List<string>() { "Descriere" },
+            new List<string>() { "Rezoluție" },
+            new List<string>() { "Prezenți" },
+            new List<string>() { "Pentru" },
+            new List<string>() { "Împotrivă", "Contra" },
+            new List<string>() { "Abţineri" },
+            new List<string>() { "Nu au votat", "Prezent - Nu au votat" },
         };
 
         // The first cyan dates show up in September 2005, but they're actually empty
@@ -101,9 +92,9 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
             for (var i = 0; i < VoteSummaryHeaderExpectedContents.Count; i++)
             {
-                if (!VoteSummaryHeaderExpectedContents[i].Equals(headerCells[i].InnerHtml))
+                if (!VoteSummaryHeaderExpectedContents[i].Contains(headerCells[i].InnerHtml))
                 {
-                    throw new UnexpectedPageContentException("The vote summary header row contains «" + headerCells[i].InnerHtml + "» instead of the expected «" + VoteSummaryHeaderExpectedContents[i] + "»");
+                    throw new UnexpectedPageContentException("The vote summary header row contains «" + headerCells[i].InnerHtml + "» instead of the expected «" + VoteSummaryHeaderExpectedContents[i].ToString() + "»");
                 }
             }
 

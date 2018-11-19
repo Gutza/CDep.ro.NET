@@ -72,7 +72,8 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
                 if (0 == matchedCellCount)
                 {
-                    throw new UnexpectedPageContentException("Found no votes on row " + rowNumber + ".");
+                    //throw new UnexpectedPageContentException("Found no votes on row " + rowNumber + ".");
+                    continue; // They used to not list the PM at all, but now they do even when they're absent.
                 }
 
                 if (1 != matchedCellCount)
