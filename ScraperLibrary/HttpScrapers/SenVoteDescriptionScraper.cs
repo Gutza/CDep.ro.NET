@@ -72,7 +72,8 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
                 if (0 == matchedCellCount)
                 {
-                    throw new UnexpectedPageContentException("Found no votes on row " + rowNumber + ".");
+                    continue; // This now happens (2018-11-07)
+                    //throw new UnexpectedPageContentException("Found no votes on row " + rowNumber + ".");
                 }
 
                 if (1 != matchedCellCount)

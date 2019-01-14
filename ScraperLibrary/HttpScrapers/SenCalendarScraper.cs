@@ -30,17 +30,17 @@ namespace ro.stancescu.CDep.ScraperLibrary
         private const string NUMBER_REGEX_PATTERN = @"^[0-9]+$";
         private static readonly Regex NumberRegex = new Regex(NUMBER_REGEX_PATTERN);
 
-        private static readonly List<string> VoteSummaryHeaderExpectedContents = new List<string>()
+        private static readonly List<List<string>> VoteSummaryHeaderExpectedContents = new List<List<string>>()
         {
-            "Ora",
-            "Denumire",
-            "Descriere",
-            "Rezoluție",
-            "Prezenți",
-            "Pentru",
-            "Împotrivă",
-            "Abţineri",
-            "Nu au votat",
+            new List<string>() { "Ora" },
+            new List<string>() { "Denumire" },
+            new List<string>() { "Descriere" },
+            new List<string>() { "Rezoluție" },
+            new List<string>() { "Prezenți" },
+            new List<string>() { "Pentru" },
+            new List<string>() { "Contra", "Împotrivă" },
+            new List<string>() { "Abţineri" },
+            new List<string>() { "Nu au votat", "Prezent - Nu au votat" },
         };
 
         // The first cyan dates show up in September 2005, but they're actually empty
@@ -101,9 +101,9 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
             for (var i = 0; i < VoteSummaryHeaderExpectedContents.Count; i++)
             {
-                if (!VoteSummaryHeaderExpectedContents[i].Equals(headerCells[i].InnerHtml))
+                if (!VoteSummaryHeaderExpectedContents[i].Contains(headerCells[i].InnerHtml))
                 {
-                    throw new UnexpectedPageContentException("The vote summary header row contains «" + headerCells[i].InnerHtml + "» instead of the expected «" + VoteSummaryHeaderExpectedContents[i] + "»");
+                    throw new UnexpectedPageContentException("The vote summary header row contains «" + headerCells[i].InnerHtml + "» instead of the expected «" + string.Join("», or «", VoteSummaryHeaderExpectedContents[i]) + "»");
                 }
             }
 
