@@ -1,4 +1,5 @@
 ﻿using ro.stancescu.CDep.BusinessEntities;
+using ro.stancescu.CDep.BusinessEntities.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,6 +14,13 @@ namespace ro.stancescu.CDep.ScraperLibrary
         public string FirstName;
         public string LastName;
         public Chambers Chamber;
+
+        public void Cleanup()
+        {
+            bool ignoreMe;
+            FirstName = StringCleanupUtils.CleanupToUtf8(FirstName, out ignoreMe);
+            LastName = StringCleanupUtils.CleanupToUtf8(LastName, out ignoreMe);
+        }
 
         public override bool Equals(object obj)
         {

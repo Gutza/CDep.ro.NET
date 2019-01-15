@@ -23,8 +23,8 @@ namespace ro.stancescu.CDep.CDepWinIface
 {
     public partial class Form1 : Form
     {
-        Configuration dbCfg;
-        ISessionFactory sessionFactory;
+        Configuration DbCfg;
+        ISessionFactory SessionFactory;
 
         public Form1()
         {
@@ -33,17 +33,17 @@ namespace ro.stancescu.CDep.CDepWinIface
         }
         private void InitDB()
         {
-            dbCfg = new Configuration();
-            dbCfg.Configure();
-            dbCfg = Fluently.Configure(dbCfg)
+            DbCfg = new Configuration();
+            DbCfg.Configure();
+            DbCfg = Fluently.Configure(DbCfg)
                 .Mappings(m => m.FluentMappings.AddFromAssemblyOf<MPMapping>()).BuildConfiguration();
-            dbCfg.AddAssembly("ro.stancescu.CDep.BusinessEntities");
-            sessionFactory = dbCfg.BuildSessionFactory();
+            DbCfg.AddAssembly("ro.stancescu.CDep.BusinessEntities");
+            SessionFactory = DbCfg.BuildSessionFactory();
         }
 
         private void DBCreate(object sender, EventArgs e)
         {
-            var schema = new SchemaExport(dbCfg);
+            var schema = new SchemaExport(DbCfg);
             schema.Create(true, true);
         }
 
@@ -56,13 +56,13 @@ namespace ro.stancescu.CDep.CDepWinIface
             int currentYear = 2006;
             int currentMonth = 2;
 
+            DepParliamentarySessionParser.OnNetworkStart += NetworkStart;
+            DepParliamentarySessionParser.OnNetworkStop += NetworkStop;
             while (currentYear <= DateTime.Now.Year || currentMonth <= DateTime.Now.Month)
             {
-                DepParliamentarySessionParser.OnNetworkStart += NetworkStart;
-                DepParliamentarySessionParser.OnNetworkStop += NetworkStop;
                 var dates = DepParliamentarySessionParser.GetDates(currentYear, currentMonth);
 
-                DepSummaryProcessor.Init(sessionFactory);
+                DepSummaryProcessor.Init(SessionFactory);
                 DepSummaryProcessor.OnProgress += SummaryProgress;
                 DepSummaryProcessor.OnNetworkStart += NetworkStart;
                 DepSummaryProcessor.OnNetworkStop += NetworkStop;
@@ -79,6 +79,9 @@ namespace ro.stancescu.CDep.CDepWinIface
                     DepSummaryProcessor.Process(date);
                     idx++;
                 }
+                DepSummaryProcessor.OnProgress -= SummaryProgress;
+                DepSummaryProcessor.OnNetworkStart -= NetworkStart;
+                DepSummaryProcessor.OnNetworkStop -= NetworkStop;
 
                 currentMonth++;
                 if (currentMonth == 13)
@@ -87,6 +90,8 @@ namespace ro.stancescu.CDep.CDepWinIface
                     currentYear++;
                 }
             }
+            DepParliamentarySessionParser.OnNetworkStart -= NetworkStart;
+            DepParliamentarySessionParser.OnNetworkStop -= NetworkStop;
             progressBar1.Value = 0;
             toolStripStatusLabel1.Text = "Idle";
         }
@@ -111,11 +116,27 @@ namespace ro.stancescu.CDep.CDepWinIface
 
         private void button1_Click(object sender, EventArgs e)
         {
-            SenateProcessor.Init(sessionFactory);
+            SenateProcessor.Init(SessionFactory);
             var senateProcessor = new SenateProcessor();
             senateProcessor.Execute();
             //var mpparser = new MPParser();
             //mpparser.Execute(sessionFactory);
+        }
+
+        private void btnFixMPs_Click(object sender, EventArgs e)
+        {
+            using (var sess = SessionFactory.OpenStatelessSession())
+            {
+                var mps = sess.QueryOver<MPDBE>().List();
+                foreach(var mp in mps)
+                {
+                    var cleanedUp = mp.Cleanup();
+                    if (cleanedUp)
+                    {
+                        sess.Update(mp);
+                    }
+                }
+            }
         }
     }
 }

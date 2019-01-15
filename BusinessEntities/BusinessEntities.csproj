@@ -90,6 +90,7 @@
     <Compile Include="DBMapping\VoteSummaryMapping.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="DataInterchange\VoteSummaryDIO.cs" />
+    <Compile Include="Utilities\StringCleanupUtils.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

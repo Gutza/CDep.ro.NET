@@ -36,6 +36,7 @@
             this.networkPanel = new System.Windows.Forms.Panel();
             this.label1 = new System.Windows.Forms.Label();
             this.button1 = new System.Windows.Forms.Button();
+            this.btnFixMPs = new System.Windows.Forms.Button();
             this.statusStrip1.SuspendLayout();
             this.networkPanel.SuspendLayout();
             this.SuspendLayout();
@@ -64,7 +65,7 @@
             // 
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripStatusLabel1});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 132);
+            this.statusStrip1.Location = new System.Drawing.Point(0, 180);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.Size = new System.Drawing.Size(284, 22);
             this.statusStrip1.TabIndex = 5;
@@ -114,12 +115,23 @@
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
+            // btnFixMPs
+            // 
+            this.btnFixMPs.Location = new System.Drawing.Point(12, 154);
+            this.btnFixMPs.Name = "btnFixMPs";
+            this.btnFixMPs.Size = new System.Drawing.Size(260, 23);
+            this.btnFixMPs.TabIndex = 9;
+            this.btnFixMPs.Text = "Fix MPs";
+            this.btnFixMPs.UseVisualStyleBackColor = true;
+            this.btnFixMPs.Click += new System.EventHandler(this.btnFixMPs_Click);
+            // 
             // Form1
             // 
             this.AcceptButton = this.button5;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(284, 154);
+            this.ClientSize = new System.Drawing.Size(284, 202);
+            this.Controls.Add(this.btnFixMPs);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.networkPanel);
             this.Controls.Add(this.progressBar1);
@@ -146,6 +158,7 @@
         private System.Windows.Forms.Panel networkPanel;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button btnFixMPs;
     }
 }
 
