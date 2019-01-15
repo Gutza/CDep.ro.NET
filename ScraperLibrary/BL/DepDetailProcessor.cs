@@ -47,7 +47,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
                 return;
             }
 
-            var url = String.Format(URI_FORMAT, voteSummary.VoteIDCDep);
+            var url = string.Format(URI_FORMAT, voteSummary.VoteIDCDep);
 
             StartNetwork();
             var scraper = new GenericXmlScraper<VoteDetailCollectionDIO>(url);
@@ -57,6 +57,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
             {
                 return;
             }
+            detailData.Vote = voteSummary;
             ProcessData(detailData, session, newRecord);
             using (var trans = session.BeginTransaction())
             {
