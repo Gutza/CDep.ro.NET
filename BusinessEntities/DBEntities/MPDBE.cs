@@ -27,10 +27,6 @@ namespace ro.stancescu.CDep.BusinessEntities
             bool cleanedUpFname = false, cleanedUpLname = false;
             FirstName = StringCleanupUtils.CleanupToUtf8(FirstName, out cleanedUpFname);
             LastName = StringCleanupUtils.CleanupToUtf8(LastName, out cleanedUpLname);
-            if (FirstName.Equals("Iosif"))
-            {
-                var cuc = true;
-            }
             return cleanedUpFname || cleanedUpLname;
         }
     }
