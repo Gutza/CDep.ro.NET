@@ -40,7 +40,8 @@ namespace ro.stancescu.CDep.ScraperLibrary
             )
             {
                 Console.WriteLine("Processing month " + scraperMonthYear.ToShortDateString());
-                var scraperDoc = calendarScraper.GetYearMonthDocument(scraperMonthYear.Year, scraperMonthYear.Month);
+                // TODO: The logic for forcing a refresh should be extended to all partially-completed month throughout the scraping history.
+                var scraperDoc = calendarScraper.GetYearMonthDocument(scraperMonthYear.Year, scraperMonthYear.Month, scraperMonthYear.Year == currentMonthYear.Year && scraperMonthYear.Month == currentMonthYear.Month);
                 var calendarDateDTOs = calendarScraper.GetValidDates(scraperDoc);
                 if (calendarDateDTOs.Count == 0)
                 {

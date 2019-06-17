@@ -53,16 +53,19 @@ namespace ro.stancescu.CDep.ScraperLibrary
 
         private string GetCacheIdForDate(DateTime date)
         {
-            return String.Format(CALENDAR_VOTE_DAY_CACHE_FORMAT, date.Year, date.Month.ToString("D2"), date.Day.ToString("D2"));
+            return string.Format(CALENDAR_VOTE_DAY_CACHE_FORMAT, date.Year, date.Month.ToString("D2"), date.Day.ToString("D2"));
         }
 
-        internal IDocument GetYearMonthDocument(int year, int month)
+        internal IDocument GetYearMonthDocument(int year, int month, bool forceLiveDocument)
         {
             var cacheId = GetCacheIdForDate(new DateTime(year, month, 1));
-            var stream = GetCachedByKey(cacheId);
-            if (stream != null)
+            if (!forceLiveDocument)
             {
-                return GetDocumentFromStream(stream);
+                var stream = GetCachedByKey(cacheId);
+                if (stream != null)
+                {
+                    return GetDocumentFromStream(stream);
+                }
             }
 
             GetLiveBaseDocument();

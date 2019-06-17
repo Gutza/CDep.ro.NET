@@ -53,7 +53,7 @@ namespace ro.stancescu.CDep.ScraperLibrary
             }
 
             var requester = new HttpRequester();
-            requester.Headers["User-Agent"] = "Mozilla";
+            requester.Headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:67.0) Gecko/20100101 Firefox/67.0";
 
             var config = Configuration.Default.WithDefaultLoader(requesters: new[] { requester }).WithCss();
 
